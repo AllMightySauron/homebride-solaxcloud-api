@@ -1,15 +1,46 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "SolaxCloudAPI",
   "pluginType": "platform",
-  "singular": true,
+  "singular": false,
+  "headerDisplay": "This Homebridge plugin uses Solax API service to obtain real-time info of your inverters.",
   "schema": {
     "type": "object",
     "properties": {
       "name": {
-        "title": "Name",
+        "title": "Inverter name",
         "type": "string",
         "required": true,
-        "default": "Example Dynamic Platform"
+        "description": "Inverter name for description purposes.",
+        "default": "My Solax Inverter",
+        "minLength": 1,
+        "maxLength": 30
+      },
+      "tokenId": {
+        "title": "TokenID from Solax",
+        "type": "string",
+        "required": true,
+        "description": "Users get information from Solax Cloud through the granted tokenID. Please obtain your tokenID on the API page of Solax Cloud.",
+        "default": "20200722185111234567890",
+        "minLength": 23,
+        "maxLength": 23
+      },
+      "sn": {
+        "title": "Registration No. (module SN)",
+        "type": "string",
+        "required": true,
+        "description": "Registration No. (inverter module SN)",
+        "default": "ABCDEFGHIJ",
+        "minLength": 10,
+        "maxLength": 10
+      },
+      "pollingFrequency": {
+          "title": "Polling frequency (seconds)",
+          "type": "integer",
+          "required": false,
+          "description": "Polling frequency. It needs to be lower than 10 times/min (every 6 seconds) and 10,000 times/day (every )",
+          "default": 60,
+          "minimum": 60,
+          "maximum": 300
       }
     }
   }
