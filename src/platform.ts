@@ -7,6 +7,7 @@ import { SolaxOutletAccessory } from './outletAccessory';
 import util from 'util';
 
 import { SolaxCloudAPIResponse, SolaxCloudAPI } from './solaxcloudapi';
+import { SolaxMotionAccessory } from './motionAccessory';
 
 /**
  * HomebridgePlatform
@@ -23,15 +24,15 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
   private readonly solaxCloudAPI!: SolaxCloudAPI;
   public apiData!: SolaxCloudAPIResponse;
 
+  // outlets
   private outletPV!: SolaxOutletAccessory;
   private outletInverterAC!: SolaxOutletAccessory;
   private outletInverterToGrid!: SolaxOutletAccessory;
   private outletInverterToHouse!: SolaxOutletAccessory;
   private outletGridToHouse!: SolaxOutletAccessory;
 
-  /*  inverterToHouse: SolaxOutletAccessory;
-    gridToHouse: SolaxOutletAccessory;
-  };*/
+  // motion sensor
+  private motionUpdate!: SolaxMotionAccessory;
 
   /**
    * Platform constructor.
@@ -62,6 +63,9 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
     this.outletInverterToHouse = new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter to House`);
     this.outletGridToHouse = new SolaxOutletAccessory(this, this.log, `${this.config.name} Grid to House`);
 
+    // setup update motion sensor
+    this.motionUpdate = new SolaxMotionAccessory(this, this.log, `${this.config.name} Update`);
+
     // init new Solax Cloud API object with give tokenID and sn
     this.solaxCloudAPI = new SolaxCloudAPI(this.config.tokenId, this.config.sn);
 
@@ -91,24 +95,29 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
 
         // set outlet status
         this.outletPV.setPowerConsumption(SolaxCloudAPI.getPVPower(this.apiData.result));
-        this.outletPV.setSerial('pv-' + this.apiData.result.inverterSN);
+        this.outletPV.setSerial(`pv-${this.apiData.result.inverterSN}`);
         this.outletPV.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
 
         this.outletInverterAC.setPowerConsumption(SolaxCloudAPI.getInverterACPower(this.apiData.result));
-        this.outletInverterAC.setSerial('inv-ac-' + this.apiData.result.inverterSN);
+        this.outletInverterAC.setSerial(`inv-ac-${this.apiData.result.inverterSN}`);
         this.outletInverterAC.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
 
         this.outletInverterToGrid.setPowerConsumption(SolaxCloudAPI.getInverterPowerToGrid(this.apiData.result));
-        this.outletInverterToGrid.setSerial('inv-grid-' + this.apiData.result.inverterSN);
+        this.outletInverterToGrid.setSerial(`inv-grid-${this.apiData.result.inverterSN}`);
         this.outletInverterToGrid.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
 
         this.outletInverterToHouse.setPowerConsumption(SolaxCloudAPI.getInverterPowerToHouse(this.apiData.result));
-        this.outletInverterToHouse.setSerial('inv-house-' + this.apiData.result.inverterSN);
+        this.outletInverterToHouse.setSerial(`inv-house-${this.apiData.result.inverterSN}`);
         this.outletInverterToHouse.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
 
         this.outletGridToHouse.setPowerConsumption(SolaxCloudAPI.getGridPowerToHouse(this.apiData.result));
-        this.outletGridToHouse.setSerial('grid-house-' + this.apiData.result.inverterSN);
+        this.outletGridToHouse.setSerial(`grid-house-${this.apiData.result.inverterSN}`);
         this.outletGridToHouse.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
+
+        // update motion sensor
+        this.motionUpdate.setState(true);
+        this.motionUpdate.setSerial(`update-${this.apiData.result.inverterSN}`);
+        this.motionUpdate.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
       } else {
         throw new Error(this.apiData.exception);
       }
@@ -143,6 +152,8 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
    * The Platform must respond in a timely manner as otherwise the startup of the bridge would be unnecessarily delayed.
    */
   accessories(callback: (foundAccessories: AccessoryPlugin[]) => void): void {
-    callback([ this.outletPV, this.outletInverterAC, this.outletInverterToGrid, this.outletInverterToHouse, this.outletGridToHouse ]);
+    callback([ this.outletPV, this.outletInverterAC,
+      this.outletInverterToGrid, this.outletInverterToHouse, this.outletGridToHouse,
+      this.motionUpdate ]);
   }
 }

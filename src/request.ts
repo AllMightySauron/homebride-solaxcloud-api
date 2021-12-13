@@ -66,7 +66,7 @@ function errorResponse(xhr: XMLHttpRequest, message: string | null = null): Requ
 export function request(method: 'get' | 'post',
   url: string,
   queryParams: object = {},
-  body: any = null,
+  body: unknown = null,
   options: RequestOptions = DEFAULT_REQUEST_OPTIONS) {
 
   const ignoreCache = options.ignoreCache || DEFAULT_REQUEST_OPTIONS.ignoreCache;

@@ -1,22 +1,16 @@
 import { Service, AccessoryPlugin, Logging, CharacteristicGetCallback, Characteristic } from 'homebridge';
 
 import { SolaxCloudAPIPlatform } from './platform';
+import { SolaxPlatformAccessory } from './platformAccessory';
 
 /**
- * Solax Outlet Accessory
+ * Solax Outlet Accessory.
  * An instance of this class is created for each accessory your platform registers
  * Each accessory may expose multiple services of different service types.
  */
-export class SolaxOutletAccessory implements AccessoryPlugin {
-  private readonly platform: SolaxCloudAPIPlatform;
-  private readonly log: Logging;
-  private readonly name: string;
+export class SolaxOutletAccessory extends SolaxPlatformAccessory implements AccessoryPlugin {
 
   private readonly outletService: Service;
-  private readonly informationService: Service;
-
-  private model = 'Solax inverter';
-  private serial = 'Default serial';
 
   // power reading in Watt
   private powerConsumption = 0;
@@ -26,9 +20,7 @@ export class SolaxOutletAccessory implements AccessoryPlugin {
   private totalEnergyConsumption = 0.0;
 
   constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string) {
-    this.platform = platform;
-    this.log = log;
-    this.name = name;
+    super(platform, log, name);
 
     const hap = this.platform.api.hap;
 
@@ -43,15 +35,6 @@ export class SolaxOutletAccessory implements AccessoryPlugin {
 
     // current consumption
     this.outletService.addOptionalCharacteristic(this.platform.eve.Characteristics.CurrentConsumption);
-
-    // information service
-    this.informationService =
-      new platform.api.hap.Service.AccessoryInformation()
-        .setCharacteristic(hap.Characteristic.Name, this.name)
-        .setCharacteristic(hap.Characteristic.Manufacturer, 'Solax');
-
-    this.informationService.getCharacteristic(hap.Characteristic.SerialNumber).onGet(this.getSerial.bind(this));
-    this.informationService.getCharacteristic(hap.Characteristic.Model).onGet(this.getModel.bind(this));
 
     log.info(`Outlet "${name}" created!`);
   }
@@ -99,47 +82,6 @@ export class SolaxOutletAccessory implements AccessoryPlugin {
 
     callback(null, this.powerConsumption > 0);
   }
-
-  /**
-   * Handle requests to get the current value of the "Model" characteristic.
-   * @returns {string} The model.
-   */
-  public getModel(): string {
-    this.log.debug(`${this.name}: GET Model (model=${this.model})`);
-
-    return this.model;
-  }
-
-  /**
-   * Sets the model string for Model characteristic.
-   * @param {string} model Model to set.
-   */
-  public setModel(model: string) {
-    this.log.debug(`${this.name}: SET Model (model=${model})`);
-
-    this.model = model;
-  }
-
-  /**
-   * Handle requests to get the current value of the "SerialNumber" characteristic.
-   * @returns {string} The inverter serial number.
-   */
-  public getSerial(): string {
-    this.log.debug(`${this.name}: GET Serial (serial=${this.serial})`);
-
-    return this.serial;
-  }
-
-  /**
-   * Sets model serial information for this outlet.
-   * @param {string} serial Serial number to set.
-   */
-  public setSerial(serial: string) {
-    this.log.debug(`${this.name}: SET Serial (serial=${serial})`);
-
-    this.serial = serial;
-  }
-
 
   /*
    * This method is called directly after creation of this instance.
