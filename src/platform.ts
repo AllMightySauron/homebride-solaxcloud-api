@@ -93,7 +93,7 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       if (this.apiData.success) {
         this.log.debug(`Retrieved inverter status: ${JSON.stringify(this.apiData.result)}`);
 
-        // set outlet status
+        // update outlets
         this.outletPV.setPowerConsumption(SolaxCloudAPI.getPVPower(this.apiData.result));
         this.outletPV.setSerial(`pv-${this.apiData.result.inverterSN}`);
         this.outletPV.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
@@ -124,7 +124,7 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
     } catch (error) {
       this.log.error(`Failed to read from Solax Cloud API. Error: ${error}`);
     } finally {
-      this.log.debug(`Delaying for ${this.config.pollingFrequency} seconds.`);
+      this.log.debug(`Sleeping for ${this.config.pollingFrequency} seconds.`);
 
       this.sleep(this.config.pollingFrequency * 1000).then(async () => await this.getDataPeriodically());
     }
