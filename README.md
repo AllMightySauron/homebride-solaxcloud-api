@@ -67,7 +67,7 @@ Configuration through the the use of [Homebridge UI](https://github.com/oznu/hom
 
 Non-standard accessory characteristics are available through the use of [Eve for HomeKit app](https://apps.apple.com/us/app/eve-for-homekit/id917695792) you may download from the App Store.
 
-This will allow some important non-standard characteristics to be visible (like consumption), as depicted in the image below:
+This will allow some important non-standard characteristics to be visible (like power or total energy consumption), as depicted in the image below:
 
 ![consumption](images/plugin-outlet-consumption.png)
 
