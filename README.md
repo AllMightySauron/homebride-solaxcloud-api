@@ -8,10 +8,12 @@
 
 # Solax Cloud Plugin for Homebridge
 
+![npm](https://badgen.net/npm/v/homebridge-solaxcloud-api) ![npm](https://badgen.net/npm/dt/homebridge-solaxcloud-api)
 
-This Homebridge platform plugin was created to gather data from the Solax Cloud API (as documented in the official [Solax Cloud API](https://www.eu.solaxcloud.com/phoebus/resource/files/userGuide/Solax_API_for_End-user_V1.0.pdf)) by relying on the provided TokenID and SN.
 
-This Solax Cloud Plugin will expose a set of Homekit accessories though Homebridge that will allow interacting and (potentially) aumotating your smart home based on the data available from the Solax platform:
+This [Homebridge](https://homebridge.io/) platform plugin was created to gather data from the Solax Cloud API (as documented in the official [Solax Cloud API](https://www.eu.solaxcloud.com/phoebus/resource/files/userGuide/Solax_API_for_End-user_V1.0.pdf)) by relying on the provided TokenID and SN.
+
+HomeKit is still clueless about what a solar panel is. So, this Solax Cloud Plugin exposes a set of standard HomeKit accessories though Homebridge that will allow interacting and automating your smart home based on the data available from the Solax platform:
 
 - Inverter PV (outlet with power consumption)
 - Inverter AC (outlet with power consumption)
@@ -20,12 +22,23 @@ This Solax Cloud Plugin will expose a set of Homekit accessories though Homebrid
 - Grid To House (outlet with power consumption)
 - Update (Motion sensor)
 
+![accessories](images/plugin-accessories-home.png)
+ 
 ## Required information
 
 For this plugin to work, two critical pieces of information are required: 
 
 - **Token ID**: Solax users can get inverter information through the granted tokenID. You need to obtain your tokenID on the API page of Solaxcloud.
 - **SN**: Registration No (communication module SN).
+
+## Installation
+
+This plugin is supported under Homebridge. It is highly recommended that you use Homebridge Config UI X to install and configure this plugin.
+
+### Manual Installation
+
+Install this plugin using: `sudo npm install -g homebridge-solaxcloud-api`.
+Edit `config.json` manually to add your Solax inverters. See below for instructions on that.
 
 ## Platform configuration
 
@@ -46,27 +59,27 @@ Minimum platform configuration is depicted by the example configuration file bel
 ```
 Configuration through the the use of Homebridge UI plugin is also available:
 
-![md](./images/homebridge-ui.png)
+![sample](images/homebridge-ui.png)
 
 ## Non-standard characteristics
 
 Non-standard accessory characteristics are available through the use of [Eve for HomeKit app](https://apps.apple.com/us/app/eve-for-homekit/id917695792) you may download from the App Store.
 
-This will allow some important characteristics to be visible (e.g.: consumption), as depicted in the image below:
+This will allow some important non-standard characteristics to be visible (like consumption), as depicted in the image below:
 
-
+![consumption](images/plugin-outlet-consumption.png)
 
 # Automation
 
 Automation can be achived with the help of the virtual "Update" motion sensor that was specifically tailored for this effect. This motion sensor will be triggered whenever data gets updated from the Solax Cloud API (according to the `pollingFrequency` configuration setting). 
 
-IMAGE HERE
+![motion](images/plugin-accessories-eve.png)
 
-This implies data was refreshed for each of the virtual outlets enumerated above and may be used for further defining an automation.
+Whenever motion is detected, plugin data was refreshed for each of the virtual outlets enumerated above and may be used for further defining an automation.
 
 ## Automation example
 
-As an automation example
+As an automation example...
 
 # TO DO
 
