@@ -57,7 +57,9 @@ Minimum platform configuration is depicted by the example configuration file bel
   ]
 }
 ```
-Configuration through the the use of Homebridge UI plugin is also available:
+**NOTE:** The `pollingFrequency` parameter is optional and defaults to 300 seconds, since Solax inverters update cloud data every 5 minutes.
+
+Configuration through the the use of [Homebridge UI](https://github.com/oznu/homebridge-config-ui-x) plugin is also available and recommended:
 
 ![sample](images/homebridge-ui.png)
 
@@ -71,7 +73,7 @@ This will allow some important non-standard characteristics to be visible (like 
 
 # Automation
 
-Automation can be achived with the help of the virtual "Update" motion sensor that was specifically tailored for this effect. This motion sensor will be triggered whenever data gets updated from the Solax Cloud API (according to the `pollingFrequency` configuration setting). 
+Automation can be achieved with the help of the virtual "Update" motion sensor that was specifically tailored for this effect. This motion sensor will be triggered whenever data gets updated from the Solax Cloud API (in line with what is defined on the `pollingFrequency` configuration setting). 
 
 ![motion](images/plugin-accessories-eve.png)
 
@@ -85,5 +87,4 @@ As an automation example...
 
 Next planned plugin releases should include:
 
-- Inverter AC (to include Yield energy)
 - History through [fakegato-history](https://github.com/simont77/fakegato-history) module

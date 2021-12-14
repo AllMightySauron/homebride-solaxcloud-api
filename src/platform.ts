@@ -10,6 +10,11 @@ import { SolaxCloudAPIResponse, SolaxCloudAPI } from './solaxcloudapi';
 import { SolaxMotionAccessory } from './motionAccessory';
 
 /**
+ * Default polling frequency from Solax Cloud (in seconds).
+ */
+const DEFAULT_POLLING_FREQUENCY = 300;
+
+/**
  * HomebridgePlatform
  * This class is the main constructor for your plugin, this is where you should
  * parse the user config and discover/register accessories with Homebridge.
@@ -19,19 +24,39 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
   private readonly config: PlatformConfig;
   public readonly api: API;
 
-  public eve: EveHomeKitTypes;
+  public readonly eve: EveHomeKitTypes;
 
   private readonly solaxCloudAPI!: SolaxCloudAPI;
-  public apiData!: SolaxCloudAPIResponse;
+  private apiData!: SolaxCloudAPIResponse;
 
-  // outlets
+  /**
+   * Virtual outlet used to detect and measure photovoltaic production.
+  */
   private outletPV!: SolaxOutletAccessory;
+
+  /**
+   * Virtual outlet used to detect and measure inverter AC production.
+   */
   private outletInverterAC!: SolaxOutletAccessory;
+
+  /**
+   * Virtual outlet used to detect and measure inverter excess production injected in the grid.
+   */
   private outletInverterToGrid!: SolaxOutletAccessory;
+
+  /**
+   * Virtual outlet used to detect and measure inverter production directly fed into the house (self-consumption).
+   */
   private outletInverterToHouse!: SolaxOutletAccessory;
+
+  /**
+   * Virtual outlet used to detect and measure grid power fed into the house.
+   */
   private outletGridToHouse!: SolaxOutletAccessory;
 
-  // motion sensor
+  /**
+   * Virtual motion sensor triggered by data updates from Solax Cloud.
+   */
   private motionUpdate!: SolaxMotionAccessory;
 
   /**
@@ -51,6 +76,9 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
     if (!api || !config) {
       return;
     }
+
+    // setup default polling frequency
+    this.config.pollingFrequency = this.config.pollingFrequency || DEFAULT_POLLING_FREQUENCY;
 
     this.eve = new EveHomeKitTypes(api);
 
@@ -99,6 +127,7 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
         this.outletPV.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
 
         this.outletInverterAC.setPowerConsumption(SolaxCloudAPI.getInverterACPower(this.apiData.result));
+        this.outletInverterAC.setTotalEnergyConsumption(SolaxCloudAPI.getYieldTotal(this.apiData.result));
         this.outletInverterAC.setSerial(`inv-ac-${this.apiData.result.inverterSN}`);
         this.outletInverterAC.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
 
@@ -124,7 +153,7 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
     } catch (error) {
       this.log.error(`Failed to read from Solax Cloud API. Error: ${error}`);
     } finally {
-      this.log.debug(`Sleeping for ${this.config.pollingFrequency} seconds.`);
+      this.log.info(`Updated data from Solax Cloud API, sleeping for ${this.config.pollingFrequency} seconds.`);
 
       this.sleep(this.config.pollingFrequency * 1000).then(async () => await this.getDataPeriodically());
     }

@@ -5,22 +5,28 @@ import util from 'util';
 import { SolaxCloudAPIPlatform } from './platform';
 import { SolaxPlatformAccessory } from './platformAccessory';
 
-/** Motion timeout in seconds */
+/**
+ * Motion timeout in seconds.
+ */
 const MOTION_TIMEOUT = 5;
 
 /**
- * Solax Motion Accessory
- * An instance of this class is created for each accessory your platform registers
- * Each accessory may expose multiple services of different service types.
+ * Solax Motion Accessory.
+ * Virtual motion sensor triggered whenever new data is fetched from Solax Cloud.
+ * Sensor will automatically clear itself after MOTION_TIMEOUT seconds (5 seconds).
  */
 export class SolaxMotionAccessory extends SolaxPlatformAccessory implements AccessoryPlugin {
 
   private readonly motionService: Service;
 
-  /** Whether motion is detected (data udpated) */
+  /**
+   * Whether motion is detected (Solax Cloud data updated).
+   */
   private motion = false;
 
-  /** Update interval to turn motion back off (in seconds) */
+  /**
+   * Update interval to turn motion back off (in seconds).
+   */
   private motionTimeout: number = MOTION_TIMEOUT;
 
   constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string) {

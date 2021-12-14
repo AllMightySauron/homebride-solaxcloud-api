@@ -4,8 +4,7 @@ import { SolaxCloudAPIPlatform } from './platform';
 
 /**
  * Platform Accessory.
- * An instance of this class is created for each accessory your platform registers
- * Each accessory may expose multiple services of different service types.
+ * Generic platform accessory to store accessory name, manufacturer (Solax), inverter model and serial number.
  */
 export class SolaxPlatformAccessory implements AccessoryPlugin {
   protected readonly platform: SolaxCloudAPIPlatform;
@@ -24,8 +23,6 @@ export class SolaxPlatformAccessory implements AccessoryPlugin {
 
     const hap = this.platform.api.hap;
 
-    this.log.debug(`Creating outlet "${this.name}"`);
-
     // information service
     this.informationService =
       new hap.Service.AccessoryInformation()
@@ -34,8 +31,6 @@ export class SolaxPlatformAccessory implements AccessoryPlugin {
 
     this.informationService.getCharacteristic(hap.Characteristic.SerialNumber).onGet(this.getSerial.bind(this));
     this.informationService.getCharacteristic(hap.Characteristic.Model).onGet(this.getModel.bind(this));
-
-    log.info(`Outlet "${name}" created!`);
   }
 
   /**

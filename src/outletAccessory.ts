@@ -5,18 +5,21 @@ import { SolaxPlatformAccessory } from './platformAccessory';
 
 /**
  * Solax Outlet Accessory.
- * An instance of this class is created for each accessory your platform registers
- * Each accessory may expose multiple services of different service types.
+ * Virtual outlet used to monitor and measure both power and total energy consumption from Solax devices.
+ * Outlet use is inferred from a positive power comsumption.
  */
 export class SolaxOutletAccessory extends SolaxPlatformAccessory implements AccessoryPlugin {
 
   private readonly outletService: Service;
 
-  // power reading in Watt
+  /**
+   * Current power reading in Watt.
+   */
   private powerConsumption = 0;
 
-  // energy readings in KWh
-  private energyConsumption = 0.0;
+  /**
+   * Total energy readings in KWh.
+   */
   private totalEnergyConsumption = 0.0;
 
   constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string) {
@@ -35,6 +38,9 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
 
     // current consumption
     this.outletService.addOptionalCharacteristic(this.platform.eve.Characteristics.CurrentConsumption);
+
+    // total consumption
+    this.outletService.addOptionalCharacteristic(this.platform.eve.Characteristics.TotalConsumption);
 
     log.info(`Outlet "${name}" created!`);
   }
@@ -71,6 +77,26 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
     this.powerConsumption = powerConsumption;
 
     this.setCharacteristicValue(this.platform.eve.Characteristics.CurrentConsumption, this.powerConsumption);
+  }
+
+  /**
+   * Gets the total energy consumpion.
+   */
+  public getTotalEnergyConsumption(callback: CharacteristicGetCallback): void {
+    this.log.debug(`${this.name}: GET Total Energy (energy=${this.totalEnergyConsumption}kWh)`);
+
+    callback(null, this.totalEnergyConsumption);
+  }
+
+  /**
+   * Sets the total energy consumption.
+   * @param {number} totalEnergyConsumption The total energy consumption to set. */
+  public setTotalEnergyConsumption(totalEnergyConsumption: number) {
+    this.log.debug(`${this.name}: SET Total Energy (energy=${totalEnergyConsumption}kWh)`);
+
+    this.totalEnergyConsumption = totalEnergyConsumption;
+
+    this.setCharacteristicValue(this.platform.eve.Characteristics.TotalConsumption, this.totalEnergyConsumption);
   }
 
   /**
