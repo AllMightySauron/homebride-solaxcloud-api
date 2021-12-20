@@ -2,7 +2,8 @@ import { Service, AccessoryPlugin, Logging } from 'homebridge';
 
 import { SolaxCloudAPIPlatform } from './platform';
 
-import fs from 'fs';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const plugin = require('../package.json');
 
 /**
  * Platform Accessory.
@@ -25,8 +26,6 @@ export class SolaxPlatformAccessory implements AccessoryPlugin {
     this.name = name;
     this.displayName = name;
     this.serialNumber = serialNumber;
-
-    const plugin = JSON.parse(fs.readFileSync('package.json').toString());
 
     const hap = this.platform.api.hap;
 
