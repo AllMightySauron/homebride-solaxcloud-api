@@ -3,6 +3,8 @@ import { Service, AccessoryPlugin, Logging, CharacteristicGetCallback, Character
 import { SolaxCloudAPIPlatform } from './platform';
 import { SolaxPlatformAccessory } from './platformAccessory';
 
+import { FakeGatoHistoryService } from 'fakegato-history';
+
 /**
  * Solax Outlet Accessory.
  * Virtual outlet used to monitor and measure both power and total energy consumption from Solax devices.
@@ -10,6 +12,9 @@ import { SolaxPlatformAccessory } from './platformAccessory';
  */
 export class SolaxOutletAccessory extends SolaxPlatformAccessory implements AccessoryPlugin {
 
+  /**
+   * Outlet service with power meter.
+   */
   private readonly outletService: Service;
 
   /**
@@ -22,25 +27,44 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
    */
   private totalEnergyConsumption = 0.0;
 
-  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string) {
-    super(platform, log, name);
+  /**
+   * Elgato Eve fake history service for energy and status.
+   */
+  private readonly loggingService: FakeGatoHistoryService;
+
+  //private services: Service[];
+
+  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serial: string) {
+    super(platform, log, name, serial);
 
     const hap = this.platform.api.hap;
 
     this.log.debug(`Creating outlet "${this.name}"`);
 
-    // main outlet service
-    this.outletService = new hap.Service.Outlet(name);
+    // create power meter service
+    this.outletService = new this.platform.eve.Services.Outlet(this.name);
 
     // outlet on/off state
-    this.outletService.getCharacteristic(hap.Characteristic.On).
-      on(hap.CharacteristicEventTypes.GET, this.getState.bind(this));
+    this.outletService.getCharacteristic(hap.Characteristic.On).on(hap.CharacteristicEventTypes.GET, this.getState.bind(this));
+
+    // in use
+    //this.outletService.getCharacteristic(hap.Characteristic.OutletInUse).on(hap.CharacteristicEventTypes.GET, this.getState.bind(this));
 
     // current consumption
-    this.outletService.addOptionalCharacteristic(this.platform.eve.Characteristics.CurrentConsumption);
+    this.outletService.getCharacteristic(this.platform.eve.Characteristics.CurrentConsumption)
+      .on(hap.CharacteristicEventTypes.GET, this.getPowerConsumption.bind(this));
 
     // total consumption
-    this.outletService.addOptionalCharacteristic(this.platform.eve.Characteristics.TotalConsumption);
+    this.outletService.getCharacteristic(this.platform.eve.Characteristics.TotalConsumption)
+      .on(hap.CharacteristicEventTypes.GET, this.getTotalEnergyConsumption.bind(this));
+
+    // reset
+    //this.powerMeterService.addOptionalCharacteristic(this.platform.eve.Characteristics.ResetTotal);
+
+    // history logging services
+    this.loggingService = new this.platform.eveService('energy', this, { storage: 'fs' } );
+
+    //this.services.push(this.loggingService);
 
     log.info(`Outlet "${name}" created!`);
   }
@@ -55,7 +79,7 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
     const char: Characteristic | undefined = this.outletService.getCharacteristic(charName);
 
     if (char) {
-      char.setValue(value);
+      char.updateValue(value);
     }
   }
 
@@ -74,9 +98,13 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
   public setPowerConsumption(powerConsumption: number) {
     this.log.debug(`${this.name}: SET Power (power=${powerConsumption}W)`);
 
-    this.powerConsumption = powerConsumption;
+    this.powerConsumption = powerConsumption >= 0 ? powerConsumption: 0;
 
     this.setCharacteristicValue(this.platform.eve.Characteristics.CurrentConsumption, this.powerConsumption);
+
+    // add entries to history
+    this.loggingService.
+      addEntry({time: Math.round(new Date().valueOf() / 1000), power: this.powerConsumption /*, status: this.powerConsumption > 0 */ });
   }
 
   /**
@@ -86,6 +114,8 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
     this.log.debug(`${this.name}: GET Total Energy (energy=${this.totalEnergyConsumption}kWh)`);
 
     callback(null, this.totalEnergyConsumption);
+
+    //this.log.debug(JSON.stringify(this.energyHistoryService));
   }
 
   /**
@@ -117,6 +147,7 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
     return [
       this.informationService,
       this.outletService,
+      this.loggingService,
     ];
   }
 

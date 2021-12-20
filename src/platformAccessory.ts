@@ -2,24 +2,31 @@ import { Service, AccessoryPlugin, Logging } from 'homebridge';
 
 import { SolaxCloudAPIPlatform } from './platform';
 
+import fs from 'fs';
+
 /**
  * Platform Accessory.
  * Generic platform accessory to store accessory name, manufacturer (Solax), inverter model and serial number.
  */
 export class SolaxPlatformAccessory implements AccessoryPlugin {
-  protected readonly platform: SolaxCloudAPIPlatform;
-  protected readonly log: Logging;
-  protected readonly name: string;
+  public readonly platform: SolaxCloudAPIPlatform;
+  public readonly log: Logging;
+  public readonly name: string;
+  public readonly displayName: string;
+
+  public serialNumber: string;
+  public model = 'Solax inverter';
 
   protected readonly informationService: Service;
 
-  protected model = 'Solax inverter';
-  protected serial = 'Default serial';
-
-  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string) {
+  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serialNumber: string) {
     this.platform = platform;
     this.log = log;
     this.name = name;
+    this.displayName = name;
+    this.serialNumber = serialNumber;
+
+    const plugin = JSON.parse(fs.readFileSync('package.json').toString());
 
     const hap = this.platform.api.hap;
 
@@ -27,7 +34,9 @@ export class SolaxPlatformAccessory implements AccessoryPlugin {
     this.informationService =
       new hap.Service.AccessoryInformation()
         .setCharacteristic(hap.Characteristic.Name, this.name)
-        .setCharacteristic(hap.Characteristic.Manufacturer, 'Solax');
+        .setCharacteristic(hap.Characteristic.Manufacturer, 'Solax')
+        .setCharacteristic(hap.Characteristic.FirmwareRevision, plugin.version)
+        .setCharacteristic(hap.Characteristic.SerialNumber, this.serialNumber);
 
     this.informationService.getCharacteristic(hap.Characteristic.SerialNumber).onGet(this.getSerial.bind(this));
     this.informationService.getCharacteristic(hap.Characteristic.Model).onGet(this.getModel.bind(this));
@@ -50,7 +59,9 @@ export class SolaxPlatformAccessory implements AccessoryPlugin {
   public setModel(model: string) {
     this.log.debug(`${this.name}: SET Model (model=${model})`);
 
+
     this.model = model;
+    this.informationService.setCharacteristic(this.platform.api.hap.Characteristic.Model, model);
   }
 
   /**
@@ -58,9 +69,9 @@ export class SolaxPlatformAccessory implements AccessoryPlugin {
    * @returns {string} The inverter serial number.
    */
   public getSerial(): string {
-    this.log.debug(`${this.name}: GET Serial (serial=${this.serial})`);
+    this.log.debug(`${this.name}: GET Serial (serial=${this.serialNumber})`);
 
-    return this.serial;
+    return this.serialNumber;
   }
 
   /**
@@ -70,7 +81,8 @@ export class SolaxPlatformAccessory implements AccessoryPlugin {
   public setSerial(serial: string) {
     this.log.debug(`${this.name}: SET Serial (serial=${serial})`);
 
-    this.serial = serial;
+    this.serialNumber = serial;
+    this.informationService.setCharacteristic(this.platform.api.hap.Characteristic.SerialNumber, serial);
   }
 
   /*

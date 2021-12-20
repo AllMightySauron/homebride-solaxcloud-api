@@ -37,10 +37,13 @@
           "title": "Polling frequency (seconds)",
           "type": "integer",
           "required": false,
-          "description": "Polling frequency. It needs to be lower than 10 times/min (every 6 seconds) and 10,000 times/day (every )",
-          "default": 60,
-          "minimum": 60,
-          "maximum": 300
+          "default": 300,
+          "oneOf": [
+            { "title": "300 (5 minutes)", "enum": [ 300 ] },
+            { "title": "600 (10 minutes)", "enum": [ 600 ] },
+            { "title": "900 (15 minutes)", "enum": [ 900 ] }
+          ],
+          "description": "Plugin data polling frequency from Solax Cloud in seconds."
       }
     }
   }

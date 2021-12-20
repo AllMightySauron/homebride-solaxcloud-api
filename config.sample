@@ -5,7 +5,7 @@
       "name": "My Solax",
       "tokenId": "20200722185111234567890",
       "sn": "ABCDEFGHIJ",
-      "pollingFrequency": 60
+      "pollingFrequency": 300
     }
   ]
 }

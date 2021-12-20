@@ -29,8 +29,8 @@ export class SolaxMotionAccessory extends SolaxPlatformAccessory implements Acce
    */
   private motionTimeout: number = MOTION_TIMEOUT;
 
-  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string) {
-    super(platform, log, name);
+  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serial: string) {
+    super(platform, log, name, serial);
 
     const hap = this.platform.api.hap;
 

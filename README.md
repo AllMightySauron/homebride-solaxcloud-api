@@ -1,26 +1,26 @@
 
-<p align="center">
-
-<img src="https://github.com/homebridge/branding/raw/master/logos/homebridge-wordmark-logo-vertical.png" width="150">
-
-</p>
-
+<table>
+  <tr>
+    <td align="center"><img src="https://github.com/homebridge/branding/raw/master/logos/homebridge-wordmark-logo-vertical.png" width="150"></td>
+    <td align="center"><img src="https://www.solaxpower.com/wp-content/uploads/2020/03/weblogo5.png" width="300"></td>
+  <tr>
+</table>
 
 # Solax Cloud Plugin for Homebridge
 
 ![npm](https://badgen.net/npm/v/homebridge-solaxcloud-api) ![npm](https://badgen.net/npm/dt/homebridge-solaxcloud-api)
 
 
-This [Homebridge](https://homebridge.io/) platform plugin was created to gather data from the Solax Cloud API (as documented in the official [Solax Cloud API](https://www.eu.solaxcloud.com/phoebus/resource/files/userGuide/Solax_API_for_End-user_V1.0.pdf)) by relying on the provided TokenID and SN.
+The Solax Cloud Plugin for [Homebridge](https://homebridge.io/) was created as a platform plugin to gather data exposed by Solax inverters to the cloud through the [Solax Cloud API](https://www.eu.solaxcloud.com/phoebus/resource/files/userGuide/Solax_API_for_End-user_V1.0.pdf).
 
-HomeKit is still clueless about what a solar panel is. So, this Solax Cloud Plugin exposes a set of standard HomeKit accessories though Homebridge that will allow interacting and automating your smart home based on the data available from the Solax platform:
+As HomeKit is still clueless about what a solar panel is, this plugin exposes a set of standard HomeKit accessories though Homebridge that will allow interacting and automating your smart home based on the data made available from the Solax platform:
 
-- Inverter PV (outlet with power consumption)
-- Inverter AC (outlet with power consumption)
-- Inverter to Grid (outlet with power consumption)
-- Inverter to House (outlet with power consumption)
-- Grid To House (outlet with power consumption)
-- Update (Motion sensor)
+- **Inverter PV** (outlet with power consumption)
+- **Inverter AC** (outlet with power and total energy consumptions)
+- **Inverter to Grid** (outlet with power consumption)
+- **Inverter to House** (outlet with power consumption)
+- **Grid To House** (outlet with power consumption)
+- **Update** (Motion sensor)
 
 ![accessories](images/plugin-accessories-home.png)
  
@@ -73,11 +73,11 @@ This will allow some important non-standard characteristics to be visible (like 
 
 # Automation
 
-Automation can be achieved with the help of the virtual "Update" motion sensor that was specifically tailored for this effect. This motion sensor will be triggered whenever data gets updated from the Solax Cloud API (in line with what is defined on the `pollingFrequency` configuration setting). 
+Automation can be achieved with the help of the virtual "Update" motion sensor that was specifically tailored for this effect. This motion sensor will be triggered whenever data gets updated from the Solax Cloud API (according to what is defined on the `pollingFrequency` configuration setting). 
 
 ![motion](images/plugin-accessories-eve.png)
 
-Whenever motion is detected, plugin data was refreshed for each of the virtual outlets enumerated above and may be used for further defining an automation.
+Motion is detected by the **Update** motion sensor whenever there is newly fetched data from Solax Cloud. Using this sensor as a trigger combined with power and energy data from the virtual outlets enumerated above forms the basic building blocks for defining an automation.
 
 ## Automation example
 
@@ -87,4 +87,6 @@ As an automation example...
 
 Next planned plugin releases should include:
 
-- History through [fakegato-history](https://github.com/simont77/fakegato-history) module
+- [X] **Inverter AC** to include Yield Energy
+- [ ] Consumption history through the [fakegato-history](https://github.com/simont77/fakegato-history) module
+- [ ] Accessories for battery state and consumptions (do not have one available)

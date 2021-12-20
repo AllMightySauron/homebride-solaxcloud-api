@@ -1,4 +1,4 @@
-import { request } from './request';
+import fetch from 'sync-fetch';
 
 /**
  * SolaxCloudAPIResult interface for Solax Cloud API Result.
@@ -216,11 +216,18 @@ export class SolaxCloudAPI {
    * Retrieves inverter data using Solax Cloud "real-time" API.
    * @returns {SolaxCloudAPIResponse} The response by Solax Cloud API.
    */
-  public async getAPIData() {
-    const reply = await request('get', SOLAX_CLOUD_URL, { tokenId: this.tokenId, sn: this.sn });
+  public getAPIData(): SolaxCloudAPIResponse {
+    try {
+      const response = fetch(SOLAX_CLOUD_URL + '?tokenId=' + this.tokenId + '&sn=' + this.sn);
 
-    return reply.ok ?
-          <SolaxCloudAPIResponse> reply.json() : <SolaxCloudAPIResponse> { exception: reply.statusText, result: {}, success: false };
+      if (!response.ok) {
+        throw new Error(`unexpected response ${response.statusText}`);
+      }
+
+      return <SolaxCloudAPIResponse> response.json();
+    } catch (error) {
+      return <SolaxCloudAPIResponse> { exception: error, result: {}, success: false };
+    }
   }
 
 }
