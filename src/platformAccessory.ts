@@ -1,6 +1,12 @@
 import { Service, AccessoryPlugin, Logging } from 'homebridge';
 
+import os from 'os';
+
 import { SolaxCloudAPIPlatform } from './platform';
+
+import { Util } from './util';
+
+import hash from 'string-hash-64';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const plugin = require('../package.json');
@@ -10,24 +16,29 @@ const plugin = require('../package.json');
  * Generic platform accessory to store accessory name, manufacturer (Solax), inverter model and serial number.
  */
 export class SolaxPlatformAccessory implements AccessoryPlugin {
-  public readonly platform: SolaxCloudAPIPlatform;
-  public readonly log: Logging;
-  public readonly name: string;
-  public readonly displayName: string;
+  protected readonly platform: SolaxCloudAPIPlatform;
+  protected readonly log: Logging;
+  protected readonly name: string;
+  protected readonly displayName: string;
 
-  public serialNumber: string;
-  public model = 'Solax inverter';
+  protected serialNumber: string;
+  protected model = 'Solax inverter';
 
   protected readonly informationService: Service;
 
-  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serialNumber: string) {
+  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serialNumber: string, model: string) {
     this.platform = platform;
     this.log = log;
     this.name = name;
     this.displayName = name;
-    this.serialNumber = serialNumber;
+
+    // hash "true" serial and hostname to 32 bit hex
+    this.serialNumber = hash(`${serialNumber}-${os.hostname()}`).toString(16);
+    this.model = Util.normalizeName(model);
 
     const hap = this.platform.api.hap;
+
+    //this.uuid = hap.uuid.generate(this.serialNumber);
 
     // information service
     this.informationService =
@@ -35,7 +46,8 @@ export class SolaxPlatformAccessory implements AccessoryPlugin {
         .setCharacteristic(hap.Characteristic.Name, this.name)
         .setCharacteristic(hap.Characteristic.Manufacturer, 'Solax')
         .setCharacteristic(hap.Characteristic.FirmwareRevision, plugin.version)
-        .setCharacteristic(hap.Characteristic.SerialNumber, this.serialNumber);
+        .setCharacteristic(hap.Characteristic.SerialNumber, this.serialNumber)
+        .setCharacteristic(hap.Characteristic.Model, this.model);
 
     this.informationService.getCharacteristic(hap.Characteristic.SerialNumber).onGet(this.getSerial.bind(this));
     this.informationService.getCharacteristic(hap.Characteristic.Model).onGet(this.getModel.bind(this));

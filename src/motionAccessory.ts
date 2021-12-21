@@ -17,6 +17,9 @@ const MOTION_TIMEOUT = 5;
  */
 export class SolaxMotionAccessory extends SolaxPlatformAccessory implements AccessoryPlugin {
 
+  /**
+   * Homekit Motion Service for this accessory.
+   */
   private readonly motionService: Service;
 
   /**
@@ -25,12 +28,12 @@ export class SolaxMotionAccessory extends SolaxPlatformAccessory implements Acce
   private motion = false;
 
   /**
-   * Update interval to turn motion back off (in seconds).
+   * Interval before clearing motion (in seconds).
    */
   private motionTimeout: number = MOTION_TIMEOUT;
 
-  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serial: string) {
-    super(platform, log, name, serial);
+  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serial: string, model: string) {
+    super(platform, log, name, serial, model);
 
     const hap = this.platform.api.hap;
 
@@ -73,6 +76,22 @@ export class SolaxMotionAccessory extends SolaxPlatformAccessory implements Acce
       // turn it off after timeout
       this.sleep(this.motionTimeout * 1000).then(() => this.setState(false));
     }
+  }
+
+  /**
+   * Sets the motion timeout.
+   * @param {number} timeout Number of seconds before clearing motion.
+   */
+  setMotionTimeout(timeout: number) {
+    this.motionTimeout = timeout;
+  }
+
+  /**
+   * Gets the motion timeout.
+   * @return {number}  Number of seconds before clearing motion.
+   */
+  getMotionTimeout(): number {
+    return this.motionTimeout;
   }
 
   /*

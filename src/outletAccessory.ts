@@ -34,8 +34,8 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
 
   //private services: Service[];
 
-  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serial: string) {
-    super(platform, log, name, serial);
+  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serial: string, model: string) {
+    super(platform, log, name, serial, model);
 
     const hap = this.platform.api.hap;
 
@@ -62,7 +62,7 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
     //this.powerMeterService.addOptionalCharacteristic(this.platform.eve.Characteristics.ResetTotal);
 
     // history logging services
-    this.loggingService = new this.platform.eveService('energy', this, { storage: 'fs' } );
+    this.loggingService = new this.platform.eveService('energy', this, { storage: 'fs', log: this.log } );
 
     //this.services.push(this.loggingService);
 
@@ -105,6 +105,8 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
     // add entries to history
     this.loggingService.
       addEntry({time: Math.round(new Date().valueOf() / 1000), power: this.powerConsumption /*, status: this.powerConsumption > 0 */ });
+
+    //this.log.debug(JSON.stringify(this.loggingService));
   }
 
   /**
@@ -114,8 +116,6 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
     this.log.debug(`${this.name}: GET Total Energy (energy=${this.totalEnergyConsumption}kWh)`);
 
     callback(null, this.totalEnergyConsumption);
-
-    //this.log.debug(JSON.stringify(this.energyHistoryService));
   }
 
   /**

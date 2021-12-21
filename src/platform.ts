@@ -96,22 +96,23 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
     this.log.debug(`apiData = ${JSON.stringify(this.apiData)}`);
 
     const inverterSN = this.apiData.result.inverterSN.toLowerCase();
+    const inverterModel = SolaxCloudAPI.getInverterType(this.apiData.result.inverterType);
 
     // setup outlet accessories
     this.outletPV =
-        new SolaxOutletAccessory(this, this.log, `${this.config.name} PV`, `pv-${inverterSN}`);
+        new SolaxOutletAccessory(this, this.log, `${this.config.name} PV`, `pv-${inverterSN}`, inverterModel);
     this.outletInverterAC =
-        new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter AC`, `inv-ac-${inverterSN}`);
+        new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter AC`, `inv-ac-${inverterSN}`, inverterModel);
     this.outletInverterToGrid =
-        new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter to Grid`, `inv-grid-${inverterSN}`);
+        new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter to Grid`, `inv-grid-${inverterSN}`, inverterModel);
     this.outletInverterToHouse =
-        new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter to House`, `inv-house-${inverterSN}`);
+        new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter to House`, `inv-house-${inverterSN}`, inverterModel);
     this.outletGridToHouse =
-        new SolaxOutletAccessory(this, this.log, `${this.config.name} Grid to House`, `grid-house-${inverterSN}`);
+        new SolaxOutletAccessory(this, this.log, `${this.config.name} Grid to House`, `grid-house-${inverterSN}`, inverterModel);
 
     // setup update motion sensor
     this.motionUpdate =
-        new SolaxMotionAccessory(this, this.log, `${this.config.name} Update`, `update-${inverterSN}`);
+        new SolaxMotionAccessory(this, this.log, `${this.config.name} Update`, `update-${inverterSN}`, inverterModel);
 
     // start data fetching
     this.fetchDataPeriodically();
@@ -140,24 +141,18 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
 
         // update outlets
         this.outletPV.setPowerConsumption(SolaxCloudAPI.getPVPower(this.apiData.result));
-        this.outletPV.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
 
         this.outletInverterAC.setPowerConsumption(SolaxCloudAPI.getInverterACPower(this.apiData.result));
         this.outletInverterAC.setTotalEnergyConsumption(SolaxCloudAPI.getYieldTotal(this.apiData.result));
-        this.outletInverterAC.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
 
         this.outletInverterToGrid.setPowerConsumption(SolaxCloudAPI.getInverterPowerToGrid(this.apiData.result));
-        this.outletInverterToGrid.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
 
         this.outletInverterToHouse.setPowerConsumption(SolaxCloudAPI.getInverterPowerToHouse(this.apiData.result));
-        this.outletInverterToHouse.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
 
         this.outletGridToHouse.setPowerConsumption(SolaxCloudAPI.getGridPowerToHouse(this.apiData.result));
-        this.outletGridToHouse.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
 
         // update motion sensor
         this.motionUpdate.setState(true);
-        this.motionUpdate.setModel(SolaxCloudAPI.getInverterType(this.apiData.result.inverterType));
       } else {
         throw new Error(this.apiData.exception);
       }

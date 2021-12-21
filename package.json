@@ -2,7 +2,7 @@
   "private": false,
   "displayName": "Homebridge Solax Cloud API",
   "name": "homebridge-solaxcloud-api",
-  "version": "1.4.1-beta.1",
+  "version": "1.4.1",
   "description": "Integrates solar production info using public Solax Cloud API into Homebrigde acessories.",
   "license": "Apache-2.0",
   "repository": {
@@ -33,6 +33,7 @@
   "dependencies": {
     "jshint": "^2.13.1",
     "sync-fetch": "^0.3.1",
+    "string-hash-64": "^1.0.3",
     "homebridge-lib": "^5.1.21",
     "fakegato-history": "^0.6.2"
   },
