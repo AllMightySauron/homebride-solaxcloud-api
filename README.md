@@ -1,5 +1,5 @@
 
-<table>
+<table cellspacing="0" cellpadding="0">
   <tr>
     <td align="center"><img src="https://github.com/homebridge/branding/raw/master/logos/homebridge-wordmark-logo-vertical.png" width="150"></td>
     <td align="center"><img src="https://www.solaxpower.com/wp-content/uploads/2020/03/weblogo5.png" width="300"></td>
@@ -73,7 +73,7 @@ This will allow some important non-standard characteristics to be visible (like 
 
 # Automation
 
-Automation can be achieved with the help of the virtual "Update" motion sensor that was specifically tailored for this effect. This motion sensor will be triggered whenever data gets updated from the Solax Cloud API (according to what is defined on the `pollingFrequency` configuration setting). 
+Automation can be achieved with the help of the virtual **Update** motion sensor that was specifically tailored for this effect. This motion sensor will be triggered whenever data gets updated from the Solax Cloud API (according to what is defined on the `pollingFrequency` configuration setting). 
 
 ![motion](images/plugin-accessories-eve.png)
 
@@ -81,12 +81,12 @@ Motion is detected by the **Update** motion sensor whenever there is newly fetch
 
 ## Automation example
 
-As an automation example...
+Since automations are probably going to be dependent on the non-standard characteristic from the virtual outlets, these can be created by using the Eve App. As an automation example...
 
 # TO DO
 
 Next planned plugin releases should include:
 
 - [X] **Inverter AC** to include Yield Energy
-- [ ] Consumption history through the [fakegato-history](https://github.com/simont77/fakegato-history) module
+- [X] Consumption history through the [fakegato-history](https://github.com/simont77/fakegato-history) module
 - [ ] Accessories for battery state and consumptions (do not have one available)
