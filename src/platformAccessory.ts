@@ -1,44 +1,79 @@
 import { Service, AccessoryPlugin, Logging } from 'homebridge';
 
-import os from 'os';
-
 import { SolaxCloudAPIPlatform } from './platform';
-
 import { Util } from './util';
 
+import os from 'os';
 import hash from 'string-hash-64';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const plugin = require('../package.json');
 
 /**
- * Platform Accessory.
- * Generic platform accessory to store accessory name, manufacturer (Solax), inverter model and serial number.
+ * Solax Cloud generic platform accessory.
+ * Handles basic info: accessory name, manufacturer (Solax), inverter model and serial number.
  */
 export class SolaxPlatformAccessory implements AccessoryPlugin {
+  /**
+   * Accessory platform.
+   */
   protected readonly platform: SolaxCloudAPIPlatform;
+
+  /**
+   * Accessory logging.
+   */
   protected readonly log: Logging;
+
+  /**
+   * Accessory name.
+   */
   protected readonly name: string;
+
+  /**
+   * Acessory display name.
+   */
   protected readonly displayName: string;
 
+  /**
+   * Accessory serial number (string from 64 bit hash)
+   */
   protected serialNumber: string;
+
+  /**
+   * Accessory model.
+   */
   protected model = 'Solax inverter';
 
+  /**
+   * Accessory HomeKit information service.
+   */
   protected readonly informationService: Service;
 
+  /**
+   * Virtual accessory main class constructor.
+   * @param {SolaxCloudApiPlatform} platform The API Platform for Solax Cloud.
+   * @param {Logging} log The platform logging for homebridge.
+   * @param {string} name The accessory name.
+   * @param {string} serial "Real-world" serial number for this accessory.
+   * @param {string} model Accessory model.
+   */
   constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serialNumber: string, model: string) {
     this.platform = platform;
     this.log = log;
+
+    // name
     this.name = name;
+
+    // display name
     this.displayName = name;
 
-    // hash "true" serial and hostname to 32 bit hex
+    // hash "real-world" serial and hostname to 64 bit hex string
     this.serialNumber = hash(`${serialNumber}-${os.hostname()}`).toString(16);
+
+    // remove non-standard chars from model name
     this.model = Util.normalizeName(model);
 
     const hap = this.platform.api.hap;
-
-    //this.uuid = hap.uuid.generate(this.serialNumber);
 
     // information service
     this.informationService =

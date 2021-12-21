@@ -31,7 +31,7 @@ export class Util {
    * @param {string} s The original string.
    * @returns {string} Resulting string without any non-standard chars.
    */
-  public static normalizeName(s: string) {
+  public static normalizeName(s: string): string {
     return s.replace(/[^-_ a-zA-Z0-9]/gi, '');
   }
 

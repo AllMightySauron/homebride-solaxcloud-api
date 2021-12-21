@@ -32,8 +32,14 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
    */
   private readonly loggingService: FakeGatoHistoryService;
 
-  //private services: Service[];
-
+  /**
+   * Solax virtual outlet class constructor.
+   * @param {SolaxCloudApiPlatform} platform The API Platform for Solax Cloud.
+   * @param {Logging} log The platform logging for homebridge.
+   * @param {string} name The accessory name.
+   * @param {string} serial "Real world" serial number for this accessory.
+   * @param {string} model Accessory model.
+   */
   constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serial: string, model: string) {
     super(platform, log, name, serial, model);
 
@@ -58,13 +64,8 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
     this.outletService.getCharacteristic(this.platform.eve.Characteristics.TotalConsumption)
       .on(hap.CharacteristicEventTypes.GET, this.getTotalEnergyConsumption.bind(this));
 
-    // reset
-    //this.powerMeterService.addOptionalCharacteristic(this.platform.eve.Characteristics.ResetTotal);
-
     // history logging services
     this.loggingService = new this.platform.eveService('energy', this, { storage: 'fs', log: this.log } );
-
-    //this.services.push(this.loggingService);
 
     log.info(`Outlet "${name}" created!`);
   }
@@ -104,9 +105,7 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
 
     // add entries to history
     this.loggingService.
-      addEntry({time: Math.round(new Date().valueOf() / 1000), power: this.powerConsumption /*, status: this.powerConsumption > 0 */ });
-
-    //this.log.debug(JSON.stringify(this.loggingService));
+      addEntry({time: Math.round(new Date().valueOf() / 1000), power: this.powerConsumption });
   }
 
   /**
@@ -120,7 +119,8 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
 
   /**
    * Sets the total energy consumption.
-   * @param {number} totalEnergyConsumption The total energy consumption to set. */
+   * @param {number} totalEnergyConsumption The total energy consumption to set.
+   */
   public setTotalEnergyConsumption(totalEnergyConsumption: number) {
     this.log.debug(`${this.name}: SET Total Energy (energy=${totalEnergyConsumption}kWh)`);
 

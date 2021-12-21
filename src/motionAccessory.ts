@@ -13,7 +13,7 @@ const MOTION_TIMEOUT = 5;
 /**
  * Solax Motion Accessory.
  * Virtual motion sensor triggered whenever new data is fetched from Solax Cloud.
- * Sensor will automatically clear itself after MOTION_TIMEOUT seconds (5 seconds).
+ * Sensor will automatically clear itself after MOTION_TIMEOUT seconds (defaults to 5 seconds).
  */
 export class SolaxMotionAccessory extends SolaxPlatformAccessory implements AccessoryPlugin {
 
@@ -32,6 +32,14 @@ export class SolaxMotionAccessory extends SolaxPlatformAccessory implements Acce
    */
   private motionTimeout: number = MOTION_TIMEOUT;
 
+  /**
+   * Solax virtual motion sensor class constructor.
+   * @param {SolaxCloudApiPlatform} platform The API Platform for Solax Cloud.
+   * @param {Logging} log The platform logging for homebridge.
+   * @param {string} name The accessory name.
+   * @param {string} serial "Real-world" serial number for this accessory.
+   * @param {string} model Accessory model.
+   */
   constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serial: string, model: string) {
     super(platform, log, name, serial, model);
 
