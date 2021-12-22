@@ -22,7 +22,7 @@ As HomeKit is still clueless about what a solar panel is, this plugin exposes a 
 - **Grid To House** (outlet with power consumption)
 - **Update** (Motion sensor)
 
-![accessories](images/plugin-accessories-home.png)
+<img src="images/plugin-accessories-home.png" width="50%" height="50%">
  
 ## Required information
 
@@ -61,7 +61,7 @@ Minimum platform configuration is depicted by the example configuration file bel
 
 Configuration through the the use of [Homebridge UI](https://github.com/oznu/homebridge-config-ui-x) plugin is also available and recommended:
 
-![sample](images/homebridge-ui.png)
+<img src="images/homebridge-ui.png" width="100%" height="100%">
 
 ## Non-standard characteristics
 
@@ -69,19 +69,88 @@ Non-standard accessory characteristics are available through the use of [Eve for
 
 This will allow some important non-standard characteristics to be visible (like power or total energy consumption), as depicted in the image below:
 
-![consumption](images/plugin-outlet-consumption.png)
+<img src="images/plugin-outlet-consumption.png" width="50%" height="50%">
 
 # Automation
 
 Automation can be achieved with the help of the virtual **Update** motion sensor that was specifically tailored for this effect. This motion sensor will be triggered whenever data gets updated from the Solax Cloud API (according to what is defined on the `pollingFrequency` configuration setting). 
 
-![motion](images/plugin-accessories-eve.png)
+<img src="images/plugin-accessories-eve.png" width="50%" height="50%">
 
 Motion is detected by the **Update** motion sensor whenever there is newly fetched data from Solax Cloud. Using this sensor as a trigger combined with power and energy data from the virtual outlets enumerated above forms the basic building blocks for defining an automation.
 
 ## Automation example
 
-Since automations are probably going to be dependent on the non-standard characteristic from the virtual outlets, these can be created by using the Eve App. As an automation example...
+Since automations are probably going to be dependent on the non-standard **Consumption** characteristics from the virtual outlets, these must created by using the Eve App. 
+
+As an automation example, let's imagine we want to turn a pool heater pump on whenever the inverter AC power is greater than a specific figure (in Watt):
+
+<table cellspacing="0" cellpadding="0">
+  <tr>
+    <td width="50%">1. Under Automation, select <b>Rules</b></td>
+    <td width="50%">2. Click <b>Next</b></td>
+  </tr>
+  <tr>
+    <td><img src="images/automation/automation_1.png"></td>
+    <td><img src="images/automation/automation_2.png"></td>
+  </tr>
+  <tr>
+    <td>3. Click <b>Add Trigger</b></td>
+    <td>4. Select <b>Motion</b> as trigger type</td>
+  </tr>
+  <tr>
+    <td><img src="images/automation/automation_3.png"></td>
+    <td><img src="images/automation/automation_4.png"></td>
+  </tr>
+  <tr>
+    <td>5. Select the Solax <b>Update</b> motion detector and set <b>Motion</b> as trigger</td>
+    <td>6. Click <b>Next</b></td>
+  </tr>
+  <tr>
+    <td><img src="images/automation/automation_5.png"></td>
+    <td><img src="images/automation/automation_6.png"></td>
+  </tr>
+  <tr>
+    <td>7. Select <b>Add Value Condition</b></td>
+    <td>8. Choose <b>Inverter AC Consumption</b> as characteristic and elect <b>&gt=</b> a desired value</b></td>
+  </tr>
+  <tr>
+    <td><img src="images/automation/automation_7.png"></td>
+    <td><img src="images/automation/automation_8.png"></td>
+  </tr>
+  <tr>
+    <td>9. Click <b>Next</b></td>
+    <td>10. If no scene exists, click <b>Add Scene</b></td>
+  </tr>
+  <tr>
+    <td><img src="images/automation/automation_9.png"></td>
+    <td><img src="images/automation/automation_10.png"></td>
+  </tr>
+  <tr>
+    <td>11. Click <b>Add Actions</b></td>
+    <td>12. Select the accessory to be controlled (in this case <b>Garden Pool Outlet</b> will be turned <b>ON</b>)</td>
+  </tr>
+  <tr>
+    <td><img src="images/automation/automation_11.png"></td>
+    <td><img src="images/automation/automation_12.png"></td>
+  </tr>
+  <tr>
+    <td>13. Click <b>Next</b></td>
+    <td>14. Name your scene and click <b>Done</b></td>
+  </tr>
+  <tr>
+    <td><img src="images/automation/automation_13.png"></td>
+    <td><img src="images/automation/automation_14.png"></td>
+  </tr>
+  <tr>
+    <td>15. Click <b>Next</b></td>
+    <td>16. Name your rule and click <b>Done</b></td>
+  </tr>
+  <tr>
+    <td><img src="images/automation/automation_15.png"></td>
+    <td><img src="images/automation/automation_16.png"></td>
+  </tr>
+</table>
 
 # TO DO
 
