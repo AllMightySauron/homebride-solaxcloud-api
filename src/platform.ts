@@ -79,6 +79,16 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       return;
     }
 
+    // check for mandatory parameters
+    if (!this.config.tokenId) {
+      this.log.error('Can\'t find "tokenId" parameter in config file (mandatory)!');
+      return;
+    }
+    if (!this.config.sn) {
+      this.log.error('Can\'t find "sn" parameter in config file (mandatory)!');
+      return;
+    }
+
     // setup default polling frequency
     this.config.pollingFrequency = this.config.pollingFrequency || DEFAULT_POLLING_FREQUENCY;
 
