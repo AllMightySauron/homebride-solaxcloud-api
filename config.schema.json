@@ -43,7 +43,7 @@
             { "title": "600 (10 minutes)", "enum": [ 600 ] },
             { "title": "900 (15 minutes)", "enum": [ 900 ] }
           ],
-          "description": "Plugin data polling frequency from Solax Cloud in seconds."
+          "description": "Plugin data polling frequency from Solax Cloud (in seconds)."
       }
     }
   }

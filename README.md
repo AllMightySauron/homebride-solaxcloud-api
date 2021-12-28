@@ -42,7 +42,7 @@ Edit `config.json` manually to add your Solax inverters. See below for instructi
 
 ## Platform configuration
 
-Minimum platform configuration is depicted by the example configuration file below:
+Platform configuration is depicted by the example configuration file below:
 
 ```json
 {
@@ -57,6 +57,16 @@ Minimum platform configuration is depicted by the example configuration file bel
   ]
 }
 ```
+Configuration parameters are described on the table below:
+
+| **Parameter**      | **Type** | **Description** | **Default** | **Mandatory?** |
+| ------------------ | -------- | --------------- | ----------: | :------------: |
+| `platform`         | string   | Platform name (must be SolaxCloudAPI) | -           | Y              |
+| `name`             | string   | Inverter name, used as prefix for accessory naming | -           | Y              |
+| `tokenId`          | string   | Users get information from Solax Cloud through the granted tokenID. Please obtain your tokenID on the API page of Solax Cloud. | -           | Y              |
+| `sn`               | string   | Registration No. (inverter module SN) | -           | Y              |
+| `pollingFrequency` | number   | Plugin data polling frequency from Solax Cloud (in seconds) | 300         | N              |
+
 **NOTE:** The `pollingFrequency` parameter is optional and defaults to 300 seconds, since Solax inverters update cloud data every 5 minutes.
 
 Configuration through the the use of [Homebridge UI](https://github.com/oznu/homebridge-config-ui-x) plugin is also available and recommended:

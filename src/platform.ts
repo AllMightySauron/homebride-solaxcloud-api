@@ -16,6 +16,21 @@ import { SolaxMotionAccessory } from './motionAccessory';
 const DEFAULT_POLLING_FREQUENCY = 300;
 
 /**
+ * Max polls / min (obtain frequency need to be lower than 10 times/min).
+ */
+const MAX_POLLS_MIN = 10;
+
+/**
+ * Max polls / day (obtain frequency need to be lower than 10,000 times/day).
+ */
+const MAX_POLLS_DAY = 10000;
+
+/**
+ * Maximum polling frequency (in seconds).
+ */
+const MAX_POLLING_FREQUENCY = Math.max(60 / MAX_POLLS_MIN, (24 * 60 * 60) / MAX_POLLS_DAY);
+
+/**
  * SolaxCloudAPIPlatform.
  * This class is the main constructor for your plugin, this is where you should
  * parse the user config and discover/register accessories with Homebridge.
@@ -61,6 +76,9 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
    */
   private motionUpdate!: SolaxMotionAccessory;
 
+  /** Array with all accessories */
+  private solaxAccessories: AccessoryPlugin[] = [];
+
   /**
    * Platform constructor.
    * @param log
@@ -79,55 +97,94 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       return;
     }
 
+    this.log.debug(`Config: ${JSON.stringify(config)}`);
+
     // check for mandatory parameters
+    if (!this.config.name) {
+      this.log.error('Can\'t find mandatory parameter "name" parameter in config file, aborting!');
+      return;
+    }
     if (!this.config.tokenId) {
-      this.log.error('Can\'t find "tokenId" parameter in config file (mandatory)!');
+      this.log.error('Can\'t find mandatory parameter "tokenId" parameter in config file, aborting!');
       return;
     }
     if (!this.config.sn) {
-      this.log.error('Can\'t find "sn" parameter in config file (mandatory)!');
+      this.log.error('Can\'t find mandatory parameter "sn" parameter in config file, aborting!');
       return;
     }
 
     // setup default polling frequency
-    this.config.pollingFrequency = this.config.pollingFrequency || DEFAULT_POLLING_FREQUENCY;
+    if (this.config.pollingFrequency) {
+      if (Number.isInteger(this.config.pollingFrequency) && this.config.pollingFrequency > 0) {
+        // all good?
+        if (this.config.pollingFrequency < MAX_POLLING_FREQUENCY) {
+          this.log.info(
+            `Polling frequency cannot be higher than ${MAX_POLLS_MIN} times/min and ${MAX_POLLS_DAY} ` +
+            `times/day, defaulting to ${DEFAULT_POLLING_FREQUENCY} seconds.`);
+          this.config.pollingFrequency = DEFAULT_POLLING_FREQUENCY;
+        }
+      } else {
+        log.info(`Invalid polling frequency (must be a positive integer number), defaulting to ${DEFAULT_POLLING_FREQUENCY} seconds.`);
+        this.config.pollingFrequency = DEFAULT_POLLING_FREQUENCY;
+      }
+    } else {
+      log.info(`No polling frequency provided, defaulting to ${DEFAULT_POLLING_FREQUENCY} seconds.`);
+      this.config.pollingFrequency = DEFAULT_POLLING_FREQUENCY;
+    }
 
-    this.eve = new EveHomeKitTypes(this.api);
-    this.eveService = fakegato(this.api);
+    try {
+      this.eve = new EveHomeKitTypes(this.api);
+      this.eveService = fakegato(this.api);
 
-    this.log.debug(`Config: ${JSON.stringify(config)}`);
+      // init new Solax Cloud API object with give tokenID and sn
+      this.solaxCloudAPI = new SolaxCloudAPI(this.config.tokenId, this.config.sn);
 
-    // init new Solax Cloud API object with give tokenID and sn
-    this.solaxCloudAPI = new SolaxCloudAPI(this.config.tokenId, this.config.sn);
+      // initial data set
+      this.apiData = this.solaxCloudAPI.getAPIData();
 
-    // initial data set
-    this.apiData = this.solaxCloudAPI.getAPIData();
+      this.log.debug(`apiData = ${JSON.stringify(this.apiData)}`);
 
-    this.log.debug(`apiData = ${JSON.stringify(this.apiData)}`);
+      let inverterSN: string;
+      let inverterModel: string;
 
-    const inverterSN = this.apiData.result.inverterSN.toLowerCase();
-    const inverterModel = SolaxCloudAPI.getInverterType(this.apiData.result.inverterType);
+      if (this.apiData.success) {
+        inverterSN = this.apiData.result.inverterSN.toLowerCase();
+        inverterModel = SolaxCloudAPI.getInverterType(this.apiData.result.inverterType);
+      } else {
+        this.log.info('Could not retrieve initial values from Solax Cloud, accessory Serial Number and Model properties deferred...');
 
-    // setup outlet accessories
-    this.outletPV =
-        new SolaxOutletAccessory(this, this.log, `${this.config.name} PV`, `pv-${inverterSN}`, inverterModel);
-    this.outletInverterAC =
-        new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter AC`, `inv-ac-${inverterSN}`, inverterModel);
-    this.outletInverterToGrid =
-        new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter to Grid`, `inv-grid-${inverterSN}`, inverterModel);
-    this.outletInverterToHouse =
-        new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter to House`, `inv-house-${inverterSN}`, inverterModel);
-    this.outletGridToHouse =
-        new SolaxOutletAccessory(this, this.log, `${this.config.name} Grid to House`, `grid-house-${inverterSN}`, inverterModel);
+        inverterSN = this.config.name;
+        inverterModel = 'Unknown';
+      }
 
-    // setup update motion sensor
-    this.motionUpdate =
-        new SolaxMotionAccessory(this, this.log, `${this.config.name} Update`, `update-${inverterSN}`, inverterModel);
+      // setup outlet accessories
+      this.outletPV =
+          new SolaxOutletAccessory(this, this.log, `${this.config.name} PV`, `pv-${inverterSN}`, inverterModel);
+      this.outletInverterAC =
+          new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter AC`, `inv-ac-${inverterSN}`, inverterModel);
+      this.outletInverterToGrid =
+          new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter to Grid`, `inv-grid-${inverterSN}`, inverterModel);
+      this.outletInverterToHouse =
+          new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter to House`, `inv-house-${inverterSN}`, inverterModel);
+      this.outletGridToHouse =
+          new SolaxOutletAccessory(this, this.log, `${this.config.name} Grid to House`, `grid-house-${inverterSN}`, inverterModel);
 
-    // start data fetching
-    this.fetchDataPeriodically();
+      // setup update motion sensor
+      this.motionUpdate =
+          new SolaxMotionAccessory(this, this.log, `${this.config.name} Update`, `update-${inverterSN}`, inverterModel);
 
-    this.log.debug('Finished initializing platform.'),
+      // create array with all accessories
+      this.solaxAccessories =
+        [ this.outletPV, this.outletInverterAC, this.outletInverterToGrid,
+          this.outletInverterToHouse, this.outletGridToHouse, this.motionUpdate ];
+
+      // start data fetching
+      this.fetchDataPeriodically();
+
+      this.log.debug('Finished initializing platform.');
+    } catch (error) {
+      this.log.error(`Unexpected error: ${error}`);
+    }
 
     // When this event is fired it means Homebridge has created all accessories.
     this.api.on(APIEvent.DID_FINISH_LAUNCHING, () => {
@@ -182,8 +239,6 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
    * The Platform must respond in a timely manner as otherwise the startup of the bridge would be unnecessarily delayed.
    */
   accessories(callback: (foundAccessories: AccessoryPlugin[]) => void): void {
-    callback([ this.outletPV, this.outletInverterAC,
-      this.outletInverterToGrid, this.outletInverterToHouse, this.outletGridToHouse,
-      this.motionUpdate ]);
+    callback(this.solaxAccessories);
   }
 }
