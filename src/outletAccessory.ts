@@ -65,7 +65,7 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
       .on(hap.CharacteristicEventTypes.GET, this.getTotalEnergyConsumption.bind(this));
 
     // history logging services
-    this.loggingService = new this.platform.eveService('energy', this, { storage: 'fs', log: this.log } );
+    this.loggingService = new this.platform.eveService('energy', this, { storage: 'fs', log: this.log, disableRepeatLastData: true } );
 
     log.info(`Outlet "${name}" created!`);
   }
