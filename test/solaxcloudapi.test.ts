@@ -2,7 +2,7 @@ import { SolaxCloudAPI, SolaxCloudAPIResponse } from '../src/solaxcloudapi';
 
 import assert = require('assert');
 
-describe('Static methods', () => {
+describe('SolaxCloudAPI: Static methods', () => {
 
   const sampleReply: SolaxCloudAPIResponse = {
     success: true,

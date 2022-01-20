@@ -1,9 +1,16 @@
-import { Service, AccessoryPlugin, Logging, CharacteristicGetCallback, Characteristic } from 'homebridge';
+import { Service, AccessoryPlugin, Logging, CharacteristicGetCallback } from 'homebridge';
 
 import { SolaxCloudAPIPlatform } from './platform';
 import { SolaxPlatformAccessory } from './platformAccessory';
 
+import { Statistics } from './statistics';
+
 import { FakeGatoHistoryService } from 'fakegato-history';
+
+/**
+ * Maximum size for the outlet power series.
+ */
+const MAX_POWER_SERIES_SIZE = 1024;
 
 /**
  * Solax Outlet Accessory.
@@ -31,6 +38,11 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
    * Elgato Eve fake history service for energy and status.
    */
   private readonly loggingService: FakeGatoHistoryService;
+
+  /**
+   * Power series for smoothing operations.
+   * */
+  private readonly powerSeries: number[] = [];
 
   /**
    * Solax virtual outlet class constructor.
@@ -71,17 +83,60 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
   }
 
   /**
-   * Sets a characteristic value for a sepecific characteristic.
-   * @param {string} charName The characteristic name.
-   * @param {number} value The characteristic value to set.
+   * Adds new power entry to series array of power values.
+   * @param {number} powerConsumption Power value to add (in Watts).
    */
-  public setCharacteristicValue(charName: string, value: number) {
-    // set up characteristic
-    const char: Characteristic | undefined = this.outletService.getCharacteristic(charName);
-
-    if (char) {
-      char.updateValue(value);
+  private addPowerEntry(powerConsumption: number): void {
+    // check if we reached the limit
+    if (this.powerSeries.length === MAX_POWER_SERIES_SIZE) {
+      // remove first element
+      this.powerSeries.shift();
     }
+
+    // add new element
+    this.powerSeries.push(powerConsumption);
+  }
+
+  /**
+   * Gets array series with power consumption values.
+   * @returns {number[]} Array with power consumption values.
+   */
+  public getPowerSeries(): number[] {
+    return this.powerSeries;
+  }
+
+  /**
+   * Get outlet power from power series by smoothing data using the desired method and window size.
+   * @param {string} method Method to smooth data ('SMA' or 'EMA').
+   * @param {number} windowSize Window size for SMA or EMA.
+   * @returns {number} Power value after smoothing (rounded to nearest integer number).
+   */
+  public getSmoothPowerConsumption(method: string, windowSize: number): number {
+    this.log.debug(`${this.name}: GET Power Smooth (method=${method}, window=${windowSize})`);
+
+    let result = 0;
+
+    // check if we have enough data for averaging
+    switch (method) {
+      case 'sma':
+        // get power series for window size
+        // eslint-disable-next-line no-case-declarations
+        const series = this.getPowerSeries().slice(-windowSize);
+
+        // calculate simple moving average from given window size
+        // eslint-disable-next-line no-case-declarations
+        const [sma] = Statistics.simpleMovingAverage(series, Math.min(windowSize, series.length));
+
+        this.log.debug(`${this.name}: simple moving average (window data=[${series}], power=${sma}W)`);
+
+        result = sma;
+
+        break;
+
+      case 'ema':
+    }
+
+    return result;
   }
 
   /**
@@ -101,11 +156,13 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
 
     this.powerConsumption = powerConsumption >= 0 ? powerConsumption: 0;
 
-    this.setCharacteristicValue(this.platform.eve.Characteristics.CurrentConsumption, this.powerConsumption);
+    this.outletService.getCharacteristic(this.platform.eve.Characteristics.CurrentConsumption).updateValue(this.powerConsumption);
 
     // add entries to history
-    this.loggingService.
-      addEntry({time: Math.round(new Date().valueOf() / 1000), power: this.powerConsumption });
+    this.loggingService.addEntry({time: Math.round(new Date().valueOf() / 1000), power: this.powerConsumption });
+
+    // add new value to power series
+    this.addPowerEntry(this.powerConsumption);
   }
 
   /**
@@ -126,7 +183,7 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
 
     this.totalEnergyConsumption = totalEnergyConsumption;
 
-    this.setCharacteristicValue(this.platform.eve.Characteristics.TotalConsumption, this.totalEnergyConsumption);
+    this.outletService.getCharacteristic(this.platform.eve.Characteristics.TotalConsumption).updateValue(this.totalEnergyConsumption);
   }
 
   /**
@@ -144,11 +201,7 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
    * It should return all services which should be added to the accessory.
    */
   getServices(): Service[] {
-    return [
-      this.informationService,
-      this.outletService,
-      this.loggingService,
-    ];
+    return [ this.informationService, this.outletService, this.loggingService ];
   }
 
 }

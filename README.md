@@ -15,11 +15,11 @@ The Solax Cloud Plugin for [Homebridge](https://homebridge.io/) was created as a
 
 As HomeKit is still clueless about what a solar panel is, this plugin exposes a set of standard HomeKit accessories though Homebridge that will allow interacting and automating your smart home based on the data made available from the Solax platform:
 
-- **Inverter PV** (outlet with power consumption)
-- **Inverter AC** (outlet with power and total energy consumptions)
-- **Inverter to Grid** (outlet with power consumption)
-- **Inverter to House** (outlet with power consumption)
-- **Grid To House** (outlet with power consumption)
+- **PV** (PV outlet with power consumption)
+- **AC** (Inverter AC outlet with power and total energy consumptions)
+- **To Grid** (Inverter to Grid outlet with power consumption)
+- **To House** (Inverter to House outlet with power consumption)
+- **From Grid** (Grid to House outlet with power consumption)
 - **Update** (Motion sensor)
 
 <img src="images/plugin-accessories-home.png" width="50%" height="50%">
@@ -42,7 +42,7 @@ Edit `config.json` manually to add your Solax inverters. See below for instructi
 
 ## Platform configuration
 
-Platform configuration is depicted by the example configuration file below:
+Minimal platform configuration is depicted by the example configuration file below:
 
 ```json
 {
@@ -51,23 +51,24 @@ Platform configuration is depicted by the example configuration file below:
       "platform": "SolaxCloudAPI",
       "name": "My Solax",
       "tokenId": "20200722185111234567890",
-      "sn": "ABCDEFGHIJ",
-      "pollingFrequency": 60
+      "sn": "ABCDEFGHIJ"
     }
   ]
 }
 ```
 Configuration parameters are described on the table below:
 
-| **Parameter**      | **Type** | **Description** | **Default** | **Mandatory?** |
-| ------------------ | -------- | --------------- | ----------: | :------------: |
-| `platform`         | string   | Platform name (must be SolaxCloudAPI) | -           | Y              |
-| `name`             | string   | Inverter name, used as prefix for accessory naming | -           | Y              |
-| `tokenId`          | string   | Users get information from Solax Cloud through the granted tokenID. Please obtain your tokenID on the API page of Solax Cloud. | -           | Y              |
-| `sn`               | string   | Registration No. (inverter module SN) | -           | Y              |
-| `pollingFrequency` | number   | Plugin data polling frequency from Solax Cloud (in seconds) | 300         | N              |
+| **Parameter**      | **Type** |  **Description**                                                                                                                |  **Default**  | **Mandatory?** |
+| ------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------:| :------------: |
+| `platform`         |  string  |  Platform name (must be SolaxCloudAPI)                                                                                          |     -         |       Y        |
+| `name`             |  string  |  Inverter name, used as prefix for accessory naming                                                                             |     -         |       Y        |
+| `tokenId`          |  string  |  Users get information from Solax Cloud through the granted tokenID. Please obtain your tokenID on the API page of Solax Cloud. |     -         |       Y        |
+| `sn`               |  string  |  Registration No. (inverter module SN)                                                                                          |     -         |       Y        |
+| `pollingFrequency` |  number  |  Plugin data polling frequency from Solax Cloud (in seconds)                                                                    |     300       |       N        |
+| `smoothingMeters`  |  boolean |  Whether to create additional meters by smoothing raw values from Solax Cloud                                                   |     true      |       N        |
+| `pureHomeApp`      |  boolean | Whether to create meters as standard accessories that can be used on the Home App (power will show as ambient light sensors).   |     false     |       N        |
 
-**NOTE:** The `pollingFrequency` parameter is optional and defaults to 300 seconds, since Solax inverters update cloud data every 5 minutes.
+**NOTE:** The `pollingFrequency` parameter defaults to 300 seconds, since Solax inverters update cloud data every 5 minutes.
 
 Configuration through the the use of [Homebridge UI](https://github.com/oznu/homebridge-config-ui-x) plugin is also available and recommended:
 
@@ -80,6 +81,10 @@ Non-standard accessory characteristics are available through the use of [Eve for
 This will allow some important non-standard characteristics to be visible (like power or total energy consumption), as depicted in the image below:
 
 <img src="images/plugin-outlet-consumption.png" width="50%" height="50%">
+
+If you want to rely solely on the native Home App, please enable the `pureHomeApp` config setting by editing the `config.json` file or using Homebridge UI. In this case, power consumption on each meter will be exposed as an Ambient Light Sensor, as shown below (minimum value for an Ambient Light Sensor is 0.1 lux):
+
+
 
 # Automation
 
@@ -168,4 +173,6 @@ Next planned plugin releases should include:
 
 - [X] **Inverter AC** to include Yield Energy
 - [X] Consumption history through the [fakegato-history](https://github.com/simont77/fakegato-history) module
+- [x] Enable support for "pure" Home App accessories (power meters will be exposed as Ambient Light sensors)
+- [x] Add "smooth" accessories for power meters (compensating for sporadic scenarios like cloud a passing)
 - [ ] Accessories for battery state and consumptions (do not have one available)

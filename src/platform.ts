@@ -3,12 +3,23 @@ import { AccessoryPlugin, API, StaticPlatformPlugin, Logging, PlatformConfig, AP
 import { EveHomeKitTypes } from 'homebridge-lib';
 import fakegato from 'fakegato-history';
 
-import { SolaxOutletAccessory } from './outletAccessory';
-
 import util from 'util';
 
-import { SolaxCloudAPIResponse, SolaxCloudAPI } from './solaxcloudapi';
+import { SolaxCloudAPI, SolaxCloudAPIResponse } from './solaxcloudapi';
+import { PlatformLightSensorMeters, PlatformOutletMeters } from './platformMeters';
+import { SolaxOutletAccessory } from './outletAccessory';
 import { SolaxMotionAccessory } from './motionAccessory';
+import { SolaxLightSensorAccessory } from './lightSensorAccessory';
+
+/**
+ * Valid smoothing methods (Simple Moving Average, Exponential Moving Average).
+ */
+const VALID_SMOOTHING_METHODS = [ 'sma', 'ema' ];
+
+/**
+ * Default smoothing method (simple moving average).
+ */
+const DEFAULT_SMOOTHING_METHOD = 'sma';
 
 /**
  * Default polling frequency from Solax Cloud (in seconds).
@@ -31,6 +42,17 @@ const MAX_POLLS_DAY = 10000;
 const MAX_POLLING_FREQUENCY = Math.max(60 / MAX_POLLS_MIN, (24 * 60 * 60) / MAX_POLLS_DAY);
 
 /**
+ * Accessory names.
+ */
+const ACCESSORY_NAMES = {
+  pv: 'PV',
+  inverterAC: 'AC',
+  inverterToGrid: 'To Grid',
+  inverterToHouse: 'To House',
+  gridToHouse: 'From Grid',
+};
+
+/**
  * SolaxCloudAPIPlatform.
  * This class is the main constructor for your plugin, this is where you should
  * parse the user config and discover/register accessories with Homebridge.
@@ -44,37 +66,40 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
   public eveService: fakegato;
 
   private readonly solaxCloudAPI!: SolaxCloudAPI;
-  private apiData!: SolaxCloudAPIResponse;
 
   /**
-   * Virtual outlet used to detect and measure photovoltaic production.
-  */
-  private outletPV!: SolaxOutletAccessory;
-
-  /**
-   * Virtual outlet used to detect and measure inverter AC production.
+   * Numeber of periods to use for data smoothing.
    */
-  private outletInverterAC!: SolaxOutletAccessory;
+  private smoothingWindow = 1;
 
   /**
-   * Virtual outlet used to detect and measure inverter excess production injected in the grid.
+   * Outlets with raw data gather.
    */
-  private outletInverterToGrid!: SolaxOutletAccessory;
+  private rawOutlets!: PlatformOutletMeters;
 
   /**
-   * Virtual outlet used to detect and measure inverter production directly fed into the house (self-consumption).
+   * Smooth data outlets.
+   * These outlets present smoothed values based on the raw data figures to
+   * prevent events like the temporary passage of a cloud to directly affect values.
    */
-  private outletInverterToHouse!: SolaxOutletAccessory;
-
-  /**
-   * Virtual outlet used to detect and measure grid power fed into the house.
-   */
-  private outletGridToHouse!: SolaxOutletAccessory;
+  private smoothOutlets!: PlatformOutletMeters;
 
   /**
    * Virtual motion sensor triggered by data updates from Solax Cloud.
    */
   private motionUpdate!: SolaxMotionAccessory;
+
+  /**
+   * Ambient light sensors for Power Consumption (pure Home App config)
+   */
+  private rawLightSensors!: PlatformLightSensorMeters;
+
+  /**
+   * Ambient light sensors for smooth power consumption lights.
+   * These lights present smoothed values based on the raw data figures to
+   * prevent events like the temporary passage of a cloud to directly affect values.
+   */
+  private smoothLightSensors!: PlatformLightSensorMeters;
 
   /** Array with all accessories */
   private solaxAccessories: AccessoryPlugin[] = [];
@@ -97,40 +122,14 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       return;
     }
 
-    this.log.debug(`Config: ${JSON.stringify(config)}`);
-
-    // check for mandatory parameters
-    if (!this.config.name) {
-      this.log.error('Can\'t find mandatory parameter "name" parameter in config file, aborting!');
-      return;
-    }
-    if (!this.config.tokenId) {
-      this.log.error('Can\'t find mandatory parameter "tokenId" parameter in config file, aborting!');
-      return;
-    }
-    if (!this.config.sn) {
-      this.log.error('Can\'t find mandatory parameter "sn" parameter in config file, aborting!');
+    // check for valid config
+    if (!this.checkConfig(this.config)) {
       return;
     }
 
-    // setup default polling frequency
-    if (this.config.pollingFrequency) {
-      if (Number.isInteger(this.config.pollingFrequency) && this.config.pollingFrequency > 0) {
-        // all good?
-        if (this.config.pollingFrequency < MAX_POLLING_FREQUENCY) {
-          this.log.info(
-            `Polling frequency cannot be higher than ${MAX_POLLS_MIN} times/min and ${MAX_POLLS_DAY} ` +
-            `times/day, defaulting to ${DEFAULT_POLLING_FREQUENCY} seconds.`);
-          this.config.pollingFrequency = DEFAULT_POLLING_FREQUENCY;
-        }
-      } else {
-        log.info(`Invalid polling frequency (must be a positive integer number), defaulting to ${DEFAULT_POLLING_FREQUENCY} seconds.`);
-        this.config.pollingFrequency = DEFAULT_POLLING_FREQUENCY;
-      }
-    } else {
-      log.info(`No polling frequency provided, defaulting to ${DEFAULT_POLLING_FREQUENCY} seconds.`);
-      this.config.pollingFrequency = DEFAULT_POLLING_FREQUENCY;
-    }
+    // window for smoothing (aim for a 15 minute window)
+    this.smoothingWindow = Math.floor(15 * 60 / this.config.pollingFrequency);
+    this.log.info(`Window for smoothing series is ${this.smoothingWindow} periods.`);
 
     try {
       this.eve = new EveHomeKitTypes(this.api);
@@ -140,43 +139,119 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       this.solaxCloudAPI = new SolaxCloudAPI(this.config.tokenId, this.config.sn);
 
       // initial data set
-      this.apiData = this.solaxCloudAPI.getAPIData();
+      const apiData = this.solaxCloudAPI.getAPIData();
 
-      this.log.debug(`apiData = ${JSON.stringify(this.apiData)}`);
+      this.log.debug(`apiData = ${JSON.stringify(apiData)}`);
 
       let inverterSN: string;
       let inverterModel: string;
 
-      if (this.apiData.success) {
-        inverterSN = this.apiData.result.inverterSN.toLowerCase();
-        inverterModel = SolaxCloudAPI.getInverterType(this.apiData.result.inverterType);
+      if (apiData.success) {
+        inverterSN = apiData.result.inverterSN.toLowerCase();
+        inverterModel = SolaxCloudAPI.getInverterType(apiData.result.inverterType);
       } else {
         this.log.info('Could not retrieve initial values from Solax Cloud, accessory Serial Number and Model properties deferred...');
 
-        inverterSN = this.config.name;
+        inverterSN = String(this.config.name);
         inverterModel = 'Unknown';
       }
 
-      // setup outlet accessories
-      this.outletPV =
-          new SolaxOutletAccessory(this, this.log, `${this.config.name} PV`, `pv-${inverterSN}`, inverterModel);
-      this.outletInverterAC =
-          new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter AC`, `inv-ac-${inverterSN}`, inverterModel);
-      this.outletInverterToGrid =
-          new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter to Grid`, `inv-grid-${inverterSN}`, inverterModel);
-      this.outletInverterToHouse =
-          new SolaxOutletAccessory(this, this.log, `${this.config.name} Inverter to House`, `inv-house-${inverterSN}`, inverterModel);
-      this.outletGridToHouse =
-          new SolaxOutletAccessory(this, this.log, `${this.config.name} Grid to House`, `grid-house-${inverterSN}`, inverterModel);
+      // setup raw outlet accessories
+      this.rawOutlets = {
+        pv: new SolaxOutletAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.pv}`, `pv-${inverterSN}`, inverterModel),
+        inverterAC:
+          new SolaxOutletAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.inverterAC}`,
+            `inv-ac-${inverterSN}`, inverterModel),
+        inverterToGrid:
+          new SolaxOutletAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.inverterToGrid}`,
+            `inv-grid-${inverterSN}`, inverterModel),
+        inverterToHouse:
+          new SolaxOutletAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.inverterToHouse}`,
+            `inv-house-${inverterSN}`, inverterModel),
+        gridToHouse:
+          new SolaxOutletAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.gridToHouse}`,
+            `grid-house-${inverterSN}`, inverterModel),
+      };
 
       // setup update motion sensor
-      this.motionUpdate =
-          new SolaxMotionAccessory(this, this.log, `${this.config.name} Update`, `update-${inverterSN}`, inverterModel);
+      this.motionUpdate = new SolaxMotionAccessory(this, this.log, `${this.config.name} Update`, `update-${inverterSN}`, inverterModel);
 
-      // create array with all accessories
+      // create array with all base accessories
       this.solaxAccessories =
-        [ this.outletPV, this.outletInverterAC, this.outletInverterToGrid,
-          this.outletInverterToHouse, this.outletGridToHouse, this.motionUpdate ];
+        [ this.rawOutlets.pv, this.rawOutlets.inverterAC, this.rawOutlets.inverterToGrid,
+          this.rawOutlets.inverterToHouse, this.rawOutlets.gridToHouse, this.motionUpdate ];
+
+      // check if "pure" Home App accessories are needed
+      if (this.config.pureHomeApp) {
+        // add raw light sensors
+        this.rawLightSensors = {
+          pv: new SolaxLightSensorAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.pv} sensor`,
+            `pv-light-${inverterSN}`, inverterModel),
+          inverterAC:
+            new SolaxLightSensorAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.inverterAC} sensor`,
+              `inv-ac-light-${inverterSN}`, inverterModel),
+          inverterToGrid:
+            new SolaxLightSensorAccessory(this, this.log,
+              `${this.config.name} ${ACCESSORY_NAMES.inverterToGrid} sensor`, `inv-grid-light-${inverterSN}`, inverterModel),
+          inverterToHouse:
+            new SolaxLightSensorAccessory(this, this.log,
+              `${this.config.name} ${ACCESSORY_NAMES.inverterToHouse} sensor`, `inv-house-light-${inverterSN}`, inverterModel),
+          gridToHouse:
+            new SolaxLightSensorAccessory(this, this.log,
+              `${this.config.name} ${ACCESSORY_NAMES.gridToHouse} sensor`, `grid-house-light-${inverterSN}`, inverterModel),
+        };
+
+        this.solaxAccessories.push(this.rawLightSensors.pv, this.rawLightSensors.inverterAC, this.rawLightSensors.inverterToGrid,
+          this.rawLightSensors.inverterToHouse, this.rawLightSensors.gridToHouse);
+
+        if (this.config.smoothMeters) {
+          // add smooth light sensors
+          this.smoothLightSensors = {
+            pv:
+              new SolaxLightSensorAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.pv} sensor (smooth)`,
+                `pv-light-${inverterSN}`, inverterModel),
+            inverterAC:
+              new SolaxLightSensorAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.inverterAC} sensor (smooth)`,
+                `inv-ac-light-smooth-${inverterSN}`, inverterModel),
+            inverterToGrid:
+              new SolaxLightSensorAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.inverterToGrid} sensor (smooth)`,
+                `inv-grid-light-smooth-${inverterSN}`, inverterModel),
+            inverterToHouse:
+              new SolaxLightSensorAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.inverterToHouse} sensor (smooth)`,
+                `inv-house-light-smooth-${inverterSN}`, inverterModel),
+            gridToHouse:
+              new SolaxLightSensorAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.gridToHouse} sensor (smooth)`,
+                `grid-house-light-smooth-${inverterSN}`, inverterModel),
+          };
+
+          this.solaxAccessories.push(this.smoothLightSensors.pv, this.smoothLightSensors.inverterAC, this.smoothLightSensors.inverterToGrid,
+            this.smoothLightSensors.inverterToHouse, this.smoothLightSensors.gridToHouse);
+        }
+      } else {
+        if (this.config.smoothMeters) {
+          // setup smooth outlet accessories
+          this.smoothOutlets = {
+            pv:
+              new SolaxOutletAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.pv} (smooth)`,
+                `pv-smooth-${inverterSN}`, inverterModel),
+            inverterAC:
+              new SolaxOutletAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.inverterAC} (smooth)`,
+                `inv-ac-smooth-${inverterSN}`, inverterModel),
+            inverterToGrid:
+              new SolaxOutletAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.inverterToGrid} (smooth)`,
+                `inv-grid-smooth-${inverterSN}`, inverterModel),
+            inverterToHouse:
+              new SolaxOutletAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.inverterToHouse} (smooth)`,
+                `inv-house-smooth-${inverterSN}`, inverterModel),
+            gridToHouse:
+              new SolaxOutletAccessory(this, this.log, `${this.config.name} ${ACCESSORY_NAMES.gridToHouse} (smooth)`,
+                `grid-house-smooth-${inverterSN}`, inverterModel),
+          };
+
+          this.solaxAccessories.push(this.smoothOutlets.pv, this.smoothOutlets.inverterAC, this.smoothOutlets.inverterToGrid,
+            this.smoothOutlets.inverterToHouse, this.smoothOutlets.gridToHouse);
+        }
+      }
 
       // start data fetching
       this.fetchDataPeriodically();
@@ -201,27 +276,14 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
     try {
       this.log.debug('Retrieving data from Solax Cloud API.');
 
-      this.apiData = this.solaxCloudAPI.getAPIData();
+      const apiData = this.solaxCloudAPI.getAPIData();
 
-      if (this.apiData.success) {
-        this.log.debug(`Retrieved inverter status: ${JSON.stringify(this.apiData.result)}`);
+      if (apiData.success) {
+        this.log.debug(`Retrieved inverter status: ${JSON.stringify(apiData.result)}`);
 
-        // update outlets
-        this.outletPV.setPowerConsumption(SolaxCloudAPI.getPVPower(this.apiData.result));
-
-        this.outletInverterAC.setPowerConsumption(SolaxCloudAPI.getInverterACPower(this.apiData.result));
-        this.outletInverterAC.setTotalEnergyConsumption(SolaxCloudAPI.getYieldTotal(this.apiData.result));
-
-        this.outletInverterToGrid.setPowerConsumption(SolaxCloudAPI.getInverterPowerToGrid(this.apiData.result));
-
-        this.outletInverterToHouse.setPowerConsumption(SolaxCloudAPI.getInverterPowerToHouse(this.apiData.result));
-
-        this.outletGridToHouse.setPowerConsumption(SolaxCloudAPI.getGridPowerToHouse(this.apiData.result));
-
-        // update motion sensor
-        this.motionUpdate.setState(true);
+        this.updateAccessories(apiData);
       } else {
-        throw new Error(this.apiData.exception);
+        throw new Error(apiData.exception);
       }
     } catch (error) {
       this.log.error(`Failed to read from Solax Cloud API. Error: ${error}`);
@@ -231,6 +293,180 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       this.sleep(this.config.pollingFrequency * 1000)
         .then(async () => await this.fetchDataPeriodically());
     }
+  }
+
+  /**
+   * Update all platform accessory status based on the values read from the API.
+   * @param {SolaxCloudAPIResponse} apiData API data from Solax Cloud.
+   */
+  private updateAccessories(apiData: SolaxCloudAPIResponse) {
+    // update raw outlets on/off, power & energy settings
+    this.updateRawOutlets(apiData);
+
+    if (this.config.pureHomeApp) {
+      // update raw light sensors with power consumption
+      this.updateRawLightSensors(apiData);
+
+      if (this.config.smoothMeters) {
+        // update smooth light sensors from raw outlets by applying smoothing function to power consumption
+        this.updateSmoothLightSensors();
+      }
+    } else {
+      if (this.config.smoothMeters) {
+        // update smooth outlets data from raw outlets by applying smoothing function to power consumption
+        this.updateSmoothOutlets();
+      }
+    }
+
+    // update motion sensor
+    this.motionUpdate.setState(true);
+  }
+
+  /**
+   * Updates smooth ambient light sensors data from raw outlet data by applying configured smoothing function.
+   */
+  private updateSmoothLightSensors() {
+    this.smoothLightSensors.pv.setAmbientLightLevel(
+      this.rawOutlets.pv.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
+    );
+    this.smoothLightSensors.inverterAC.setAmbientLightLevel(
+      this.rawOutlets.inverterAC.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
+    );
+    this.smoothLightSensors.inverterToGrid.setAmbientLightLevel(
+      this.rawOutlets.inverterToGrid.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
+    );
+    this.smoothLightSensors.inverterToHouse.setAmbientLightLevel(
+      this.rawOutlets.inverterToHouse.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
+    );
+    this.smoothLightSensors.gridToHouse.setAmbientLightLevel(
+      this.rawOutlets.gridToHouse.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
+    );
+  }
+
+  /**
+   * Update raw ambient light sensors with power consumption data from Solax Cloud API.
+   * @param {SolaxCloudAPIResponse} apiData API data retrieved from Solax Cloud.
+   */
+  private updateRawLightSensors(apiData: SolaxCloudAPIResponse) {
+    this.rawLightSensors.pv.setAmbientLightLevel(SolaxCloudAPI.getPVPower(apiData.result));
+    this.rawLightSensors.inverterAC.setAmbientLightLevel(SolaxCloudAPI.getInverterACPower(apiData.result));
+    this.rawLightSensors.inverterToGrid.setAmbientLightLevel(SolaxCloudAPI.getInverterPowerToGrid(apiData.result));
+    this.rawLightSensors.inverterToHouse.setAmbientLightLevel(SolaxCloudAPI.getInverterPowerToHouse(apiData.result));
+    this.rawLightSensors.gridToHouse.setAmbientLightLevel(SolaxCloudAPI.getGridPowerToHouse(apiData.result));
+  }
+
+  /**
+   * Updates smooth outlet data from raw outlet data by applying configured smoothing function.
+   */
+  private updateSmoothOutlets() {
+    this.smoothOutlets.pv.setPowerConsumption(
+      this.rawOutlets.pv.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
+    );
+    this.smoothOutlets.inverterAC.setPowerConsumption(
+      this.rawOutlets.inverterAC.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
+    );
+    this.smoothOutlets.inverterToGrid.setPowerConsumption(
+      this.rawOutlets.inverterToGrid.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
+    );
+    this.smoothOutlets.inverterToHouse.setPowerConsumption(
+      this.rawOutlets.inverterToHouse.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
+    );
+    this.smoothOutlets.gridToHouse.setPowerConsumption(
+      this.rawOutlets.gridToHouse.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
+    );
+  }
+
+  /**
+   * Update raw outlet data from API data read from Solax Cloud.
+   * @param {SolaxCloudAPIResponse} apiData Solax Cloud API data.
+   * */
+  private updateRawOutlets(apiData: SolaxCloudAPIResponse) {
+    this.rawOutlets.pv.setPowerConsumption(SolaxCloudAPI.getPVPower(apiData.result));
+    this.rawOutlets.inverterAC.setPowerConsumption(SolaxCloudAPI.getInverterACPower(apiData.result));
+    this.rawOutlets.inverterAC.setTotalEnergyConsumption(SolaxCloudAPI.getYieldTotal(apiData.result));
+    this.rawOutlets.inverterToGrid.setPowerConsumption(SolaxCloudAPI.getInverterPowerToGrid(apiData.result));
+    this.rawOutlets.inverterToHouse.setPowerConsumption(SolaxCloudAPI.getInverterPowerToHouse(apiData.result));
+    this.rawOutlets.gridToHouse.setPowerConsumption(SolaxCloudAPI.getGridPowerToHouse(apiData.result));
+  }
+
+  /**
+   * Checks platform config validity and sets defaults whenever needed.
+   * @returns {boolean} Whether the config is valid.
+   */
+  private checkConfig(config: PlatformConfig): boolean {
+    let result = true;
+
+    this.log.debug(`Config read: ${JSON.stringify(config)}`);
+
+    // check for mandatory parameters
+    if (!config.name) {
+      this.log.error('Config check: Can\'t find mandatory parameter "name" parameter in config file, aborting!');
+      result = false;
+    } else if (!config.tokenId) {
+      this.log.error('Config check: Can\'t find mandatory parameter "tokenId" parameter in config file, aborting!');
+      result = false;
+    } else if (!config.sn) {
+      this.log.error('Config check: Can\'t find mandatory parameter "sn" parameter in config file, aborting!');
+      result = false;
+    }
+
+    // check for polling frequency
+    if (config.pollingFrequency === undefined) {
+      this.log.info(`Config check: No polling frequency provided, defaulting to ${DEFAULT_POLLING_FREQUENCY} seconds.`);
+      config.pollingFrequency = DEFAULT_POLLING_FREQUENCY;
+    } else {
+      if (Number.isInteger(config.pollingFrequency) && config.pollingFrequency > 0) {
+        // all good?
+        if (config.pollingFrequency < MAX_POLLING_FREQUENCY) {
+          this.log.info(
+            `Config check: Polling frequency cannot be higher than ${MAX_POLLS_MIN} times/min and ${MAX_POLLS_DAY} ` +
+            `times/day, defaulting to ${DEFAULT_POLLING_FREQUENCY} seconds.`);
+          config.pollingFrequency = DEFAULT_POLLING_FREQUENCY;
+        }
+      } else {
+        this.log.info('Config check: Invalid polling frequency (must be a positive integer number), defaulting to ' +
+                      `${DEFAULT_POLLING_FREQUENCY} seconds.`);
+        config.pollingFrequency = DEFAULT_POLLING_FREQUENCY;
+      }
+    }
+
+    // check for smooth meters
+    if (this.config.smoothMeters === undefined) {
+      this.config.smoothMeters = true;
+      this.log.info(`Config check: No config for smooth meters, defaulting to ${this.config.smoothMeters}.`);
+    } else {
+      if (typeof this.config.smoothMeters !== 'boolean') {
+        this.config.smoothMeters = true;
+        this.log.info(`Config check: Invalid setting for smooth meters, defaulting to ${this.config.smoothMeters}.`);
+      }
+    }
+
+    // check for smoothing method
+    if (this.config.smoothingMethod === undefined) {
+      this.log.info(`Config check: No smoothing method provided, defaulting to "${DEFAULT_SMOOTHING_METHOD}".`);
+      config.smoothingMethod = DEFAULT_SMOOTHING_METHOD;
+    } else {
+      if (!VALID_SMOOTHING_METHODS.find(this.config.smoothingMethod)) {
+        this.log.info(`Config check: Invalid smoothing method, defaulting to "${DEFAULT_SMOOTHING_METHOD}".`);
+        config.smoothingMethod = DEFAULT_SMOOTHING_METHOD;
+      }
+    }
+
+    // check for Home app accessories
+    if (this.config.pureHomeApp === undefined) {
+      this.config.pureHomeApp = false;
+      this.log.info(`Config check: No config for using pure Home app accessories, defaulting to ${this.config.pureHomeApp}.`);
+    } else {
+      if (typeof this.config.pureHomeApp !== 'boolean') {
+        this.config.pureHomeApp = false;
+        this.log
+          .info(`Config check: Invalid setting for using pure Home app accessories, defaulting to ${this.config.pureHomeApp}.`);
+      }
+    }
+
+    this.log.info(`Config check: final config is ${JSON.stringify(this.config)}`);
+
+    return result;
   }
 
   /*

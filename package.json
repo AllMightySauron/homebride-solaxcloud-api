@@ -2,8 +2,8 @@
   "private": false,
   "displayName": "Homebridge Solax Cloud API",
   "name": "homebridge-solaxcloud-api",
-  "version": "1.5.1",
-  "description": "Integrates solar production info using public Solax Cloud API into Homebrigde acessories.",
+  "version": "2.0.0",
+  "description": "Integrates solar production info using public Solax Cloud API into Homebrigde accessories.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "test": "mocha --timeout 0",
+    "test": "mocha --require ts-node/register test/**/*.test.ts",  
     "lint": "eslint src/**.ts --max-warnings=0",
     "watch": "npm run build && npm link && nodemon",
     "build": "rimraf ./dist && tsc",

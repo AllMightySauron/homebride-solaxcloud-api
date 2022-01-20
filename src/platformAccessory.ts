@@ -35,6 +35,11 @@ export class SolaxPlatformAccessory implements AccessoryPlugin {
   protected readonly displayName: string;
 
   /**
+   * Real-world accessory serial number.
+   */
+  protected trueSerialNumber: string;
+
+  /**
    * Accessory serial number (string from 64 bit hash)
    */
   protected serialNumber: string;
@@ -66,6 +71,9 @@ export class SolaxPlatformAccessory implements AccessoryPlugin {
 
     // display name
     this.displayName = name;
+
+    // serial
+    this.trueSerialNumber = serialNumber;
 
     // hash "real-world" serial and hostname to 64 bit hex string
     this.serialNumber = hash(`${serialNumber}-${os.hostname()}`).toString(16);
@@ -132,13 +140,19 @@ export class SolaxPlatformAccessory implements AccessoryPlugin {
   }
 
   /*
+   * This method is optional to implement. It is called when HomeKit ask to identify the accessory.
+   * Typical this only ever happens at the pairing process.
+   */
+  identify(): void {
+    this.log.info(`${this.name}: Identify (true serial=${this.trueSerialNumber}, serial=${this.serialNumber})`);
+  }
+
+  /*
    * This method is called directly after creation of this instance.
    * It should return all services which should be added to the accessory.
    */
   getServices(): Service[] {
-    return [
-      this.informationService,
-    ];
+    return [ this.informationService ];
   }
 
 }

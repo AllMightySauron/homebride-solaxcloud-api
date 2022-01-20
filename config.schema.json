@@ -44,6 +44,20 @@
             { "title": "900 (15 minutes)", "enum": [ 900 ] }
           ],
           "description": "Plugin data polling frequency from Solax Cloud (in seconds)."
+      },
+      "smoothMeters": {
+        "title": "Add accessories for smooth meters?",
+        "type": "boolean",
+        "required": false,
+        "default": true,
+        "description": "Enable this option to create accessories for smoothing raw values read from Solax Cloud."
+      },
+      "pureHomeApp": {
+          "title": "Add \"pure\" Home app accessories?",
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "description": "Enable this option to create light ambient sensors for power consumption."
       }
     }
   }
