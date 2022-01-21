@@ -41,8 +41,13 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
 
   /**
    * Power series for smoothing operations.
-   * */
+   */
   private readonly powerSeries: number[] = [];
+
+  /**
+   * Last Exponential Moving Average.
+   */
+  private lastEMA = 0;
 
   /**
    * Solax virtual outlet class constructor.
@@ -116,24 +121,36 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
 
     let result = 0;
 
+    // get power series for window size
+    const series = this.getPowerSeries().slice(-windowSize);
+
+    // calculate simple moving average from given window size
+    const [sma] = Statistics.simpleMovingAverage(series, Math.min(windowSize, series.length));
+
     // check if we have enough data for averaging
     switch (method) {
       case 'sma':
-        // get power series for window size
-        // eslint-disable-next-line no-case-declarations
-        const series = this.getPowerSeries().slice(-windowSize);
-
-        // calculate simple moving average from given window size
-        // eslint-disable-next-line no-case-declarations
-        const [sma] = Statistics.simpleMovingAverage(series, Math.min(windowSize, series.length));
-
-        this.log.debug(`${this.name}: simple moving average (window data=[${series}], power=${sma}W)`);
-
         result = sma;
+
+        this.log.debug(`${this.name}: simple moving average (window data=[${series}], power=${result}W)`);
 
         break;
 
       case 'ema':
+        if (series.length < windowSize) {
+          result = sma;
+
+          this.log.debug(`${this.name}: exponential moving average (window data=[${series}], last EMA=none, power=${result}W)`);
+        } else {
+          const lastPowerValue = series[series.length - 1];
+          const weight = 2 / (windowSize + 1);
+
+          result = (lastPowerValue - this.lastEMA) * weight + this.lastEMA;
+
+          this.log.debug(`${this.name}: exponential moving average (window data=[${series}], last EMA=${this.lastEMA}, power=${result}W)`);
+        }
+
+        this.lastEMA = result;
     }
 
     return result;

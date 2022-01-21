@@ -52,6 +52,20 @@
         "default": true,
         "description": "Enable this option to create accessories for smoothing raw values read from Solax Cloud."
       },
+      "smoothingMethod": {
+        "title": "Smoothing method",
+        "type": "string",
+        "required": true,
+        "default": "sma",
+        "oneOf": [
+          { "title": "Simple moving average", "enum": [ "sma" ] },
+          { "title": "Exponential moving average", "enum": [ "ema" ] }
+        ],
+        "condition": {
+          "functionBody": "return model.smoothMeters === true;"
+        },
+        "description": "Statistical method for smoothing power consumption data."
+    },
       "pureHomeApp": {
           "title": "Add \"pure\" Home app accessories?",
           "type": "boolean",

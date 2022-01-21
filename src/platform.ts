@@ -431,40 +431,39 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
     }
 
     // check for smooth meters
-    if (this.config.smoothMeters === undefined) {
-      this.config.smoothMeters = true;
-      this.log.info(`Config check: No config for smooth meters, defaulting to ${this.config.smoothMeters}.`);
+    if (config.smoothMeters === undefined) {
+      config.smoothMeters = true;
+      this.log.info(`Config check: No config for smooth meters, defaulting to ${config.smoothMeters}.`);
     } else {
-      if (typeof this.config.smoothMeters !== 'boolean') {
-        this.config.smoothMeters = true;
-        this.log.info(`Config check: Invalid setting for smooth meters, defaulting to ${this.config.smoothMeters}.`);
+      if (typeof config.smoothMeters !== 'boolean') {
+        config.smoothMeters = true;
+        this.log.info(`Config check: Invalid setting for smooth meters, defaulting to ${config.smoothMeters}.`);
       }
     }
 
     // check for smoothing method
-    if (this.config.smoothingMethod === undefined) {
+    if (config.smoothingMethod === undefined) {
       this.log.info(`Config check: No smoothing method provided, defaulting to "${DEFAULT_SMOOTHING_METHOD}".`);
       config.smoothingMethod = DEFAULT_SMOOTHING_METHOD;
     } else {
-      if (!VALID_SMOOTHING_METHODS.find(this.config.smoothingMethod)) {
+      if (!VALID_SMOOTHING_METHODS.includes(config.smoothingMethod)) {
         this.log.info(`Config check: Invalid smoothing method, defaulting to "${DEFAULT_SMOOTHING_METHOD}".`);
         config.smoothingMethod = DEFAULT_SMOOTHING_METHOD;
       }
     }
 
     // check for Home app accessories
-    if (this.config.pureHomeApp === undefined) {
-      this.config.pureHomeApp = false;
-      this.log.info(`Config check: No config for using pure Home app accessories, defaulting to ${this.config.pureHomeApp}.`);
+    if (config.pureHomeApp === undefined) {
+      config.pureHomeApp = false;
+      this.log.info(`Config check: No config for using pure Home app accessories, defaulting to ${config.pureHomeApp}.`);
     } else {
-      if (typeof this.config.pureHomeApp !== 'boolean') {
-        this.config.pureHomeApp = false;
-        this.log
-          .info(`Config check: Invalid setting for using pure Home app accessories, defaulting to ${this.config.pureHomeApp}.`);
+      if (typeof config.pureHomeApp !== 'boolean') {
+        config.pureHomeApp = false;
+        this.log.info(`Config check: Invalid setting for using pure Home app accessories, defaulting to ${config.pureHomeApp}.`);
       }
     }
 
-    this.log.info(`Config check: final config is ${JSON.stringify(this.config)}`);
+    this.log.info(`Config check: final config is ${JSON.stringify(config)}`);
 
     return result;
   }

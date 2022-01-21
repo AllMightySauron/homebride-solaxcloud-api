@@ -24,6 +24,8 @@ As HomeKit is still clueless about what a solar panel is, this plugin exposes a 
 
 <img src="images/plugin-accessories-home.png" width="50%" height="50%">
  
+Please note that additional accessories are created by default with smooth power consumption curves (by applying either a simple or exponential moving average to the power series). This prevents sporadic events like a cloud passing by to have an immediate affect on provided meters.
+
 ## Required information
 
 For this plugin to work, two critical pieces of information are required: 
@@ -49,7 +51,7 @@ Minimal platform configuration is depicted by the example configuration file bel
   "platforms": [
     {
       "platform": "SolaxCloudAPI",
-      "name": "My Solax",
+      "name": "Solax",
       "tokenId": "20200722185111234567890",
       "sn": "ABCDEFGHIJ"
     }
@@ -62,11 +64,12 @@ Configuration parameters are described on the table below:
 | ------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------:| :------------: |
 | `platform`         |  string  |  Platform name (must be SolaxCloudAPI)                                                                                          |     -         |       Y        |
 | `name`             |  string  |  Inverter name, used as prefix for accessory naming                                                                             |     -         |       Y        |
-| `tokenId`          |  string  |  Users get information from Solax Cloud through the granted tokenID. Please obtain your tokenID on the API page of Solax Cloud. |     -         |       Y        |
+| `tokenId`          |  string  |  Users get information from Solax Cloud through the granted tokenID. Please obtain your tokenID on the API page of Solax Cloud  |     -         |       Y        |
 | `sn`               |  string  |  Registration No. (inverter module SN)                                                                                          |     -         |       Y        |
 | `pollingFrequency` |  number  |  Plugin data polling frequency from Solax Cloud (in seconds)                                                                    |     300       |       N        |
 | `smoothingMeters`  |  boolean |  Whether to create additional meters by smoothing raw values from Solax Cloud                                                   |     true      |       N        |
-| `pureHomeApp`      |  boolean | Whether to create meters as standard accessories that can be used on the Home App (power will show as ambient light sensors).   |     false     |       N        |
+| `smoothingMethod`  |  string  |  Statistical method to use for smoothing raw values from Solax Cloud (simple or exponential moving average - "sma" or "ema")    |     "sma"     |       N        |
+| `pureHomeApp`      |  boolean |  Whether to create meters as standard accessories that can be used on the Home App (power will show as ambient light sensors)   |     false     |       N        |
 
 **NOTE:** The `pollingFrequency` parameter defaults to 300 seconds, since Solax inverters update cloud data every 5 minutes.
 
@@ -78,13 +81,13 @@ Configuration through the the use of [Homebridge UI](https://github.com/oznu/hom
 
 Non-standard accessory characteristics are available through the use of [Eve for HomeKit app](https://apps.apple.com/us/app/eve-for-homekit/id917695792) you may download from the App Store.
 
-This will allow some important non-standard characteristics to be visible (like power or total energy consumption), as depicted in the image below:
+This will allow some non-standard characteristics to be visible along with its historical data (like power or total energy consumption), as depicted in the image below:
 
 <img src="images/plugin-outlet-consumption.png" width="50%" height="50%">
 
-If you want to rely solely on the native Home App, please enable the `pureHomeApp` config setting by editing the `config.json` file or using Homebridge UI. In this case, power consumption on each meter will be exposed as an Ambient Light Sensor, as shown below (minimum value for an Ambient Light Sensor is 0.1 lux):
+If you want to rely solely on the native Home App, please enable the `pureHomeApp` config setting. In this case, power consumption on each meter will be exposed as an Ambient Light Sensor, as shown below (minimum value for an Ambient Light Sensor is 0.1 lux):
 
-
+<img src="images/plugin-accessories-home-pure.png" width="50%" height="50%">
 
 # Automation
 
