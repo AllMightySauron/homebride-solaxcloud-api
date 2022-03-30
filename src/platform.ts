@@ -280,7 +280,7 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
     const accessories: AccessoryPlugin[] = [];
 
     // loop over inverters and add accessories
-    this.inverters.forEach(inverter => accessories.concat(inverter.getAccessories()));
+    this.inverters.forEach(inverter => accessories.push(...inverter.getAccessories()));
 
     callback(accessories);
   }
