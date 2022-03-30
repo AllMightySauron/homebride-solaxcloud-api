@@ -6,15 +6,6 @@
   "schema": {
     "type": "object",
     "properties": {
-      "name": {
-        "title": "Inverter name",
-        "type": "string",
-        "required": true,
-        "description": "Inverter name for description purposes.",
-        "default": "My Solax Inverter",
-        "minLength": 1,
-        "maxLength": 30
-      },
       "tokenId": {
         "title": "TokenID from Solax",
         "type": "string",
@@ -24,14 +15,33 @@
         "minLength": 23,
         "maxLength": 23
       },
-      "sn": {
-        "title": "Registration No. (module SN)",
-        "type": "string",
-        "required": true,
-        "description": "Registration No. (inverter module SN)",
-        "default": "ABCDEFGHIJ",
-        "minLength": 10,
-        "maxLength": 10
+      "inverters": {
+        "title": "Inverters",
+        "type": "array",
+        "items": {
+          "title": "Inverter",
+          "type": "object",
+          "properties": {
+            "name": {
+              "title": "Inverter name (unique)",
+              "type": "string",
+              "required": true,
+              "description": "Inverter name for description purposes.",
+              "default": "My Solax Inverter",
+              "minLength": 1,
+              "maxLength": 30
+            },
+            "sn": {
+              "title": "Inverter module SN",
+              "type": "string",
+              "required": true,
+              "description": "Registration No. (inverter module SN)",
+              "default": "ABCDEFGHIJ",
+              "minLength": 10,
+              "maxLength": 10
+            }
+          }
+        }
       },
       "pollingFrequency": {
           "title": "Polling frequency (seconds)",

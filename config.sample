@@ -2,9 +2,13 @@
   "platforms": [
     {
       "platform": "SolaxCloudAPI",
-      "name": "My Solax",
       "tokenId": "20200722185111234567890",
-      "sn": "ABCDEFGHIJ",
+      inverters: [
+        {
+          "name": "My Solax",
+          "sn": "ABCDEFGHIJ"
+        }
+      ],
       "pollingFrequency": 300
     }
   ]

@@ -11,9 +11,11 @@
 ![npm](https://badgen.net/npm/v/homebridge-solaxcloud-api) ![npm](https://badgen.net/npm/dt/homebridge-solaxcloud-api) [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 
 
-The Solax Cloud Plugin for [Homebridge](https://homebridge.io/) was created as a platform plugin to gather data exposed by Solax inverters to the cloud through the [Solax Cloud API](https://www.eu.solaxcloud.com/phoebus/resource/files/userGuide/Solax_API_for_End-user_V1.0.pdf).
+The Solax Cloud Plugin for [Homebridge](https://homebridge.io/) was created as a platform plugin to gather data exposed by Solax inverters to the cloud through the [Solax Cloud API](https://www.eu.solaxcloud.com/phoebus/resource/files/userGuide/Solax_API_for_End-user_V1.0.pdf). 
 
-As HomeKit is still clueless about what a solar panel is, this plugin exposes a set of standard HomeKit accessories though Homebridge that will allow interacting and automating your smart home based on the data made available from the Solax platform:
+Now with **support for multiple inverters**!
+
+As HomeKit is still clueless about what a solar panel is, this plugin exposes a set of standard HomeKit accessories though Homebridge for each configured inverter that will allow interacting and automating your smart home based on the data made available from the Solax platform:
 
 - **PV** (PV outlet with power consumption)
 - **AC** (Inverter AC outlet with power and total energy consumptions)
@@ -28,10 +30,10 @@ Please note that additional accessories are created by default with smooth power
 
 ## Required information
 
-For this plugin to work, two critical pieces of information are required: 
+For this plugin to work, two critical pieces of information are required from Solax Cloud: 
 
 - **Token ID**: Solax users can get inverter information through the granted tokenID. You need to obtain your tokenID on the API page of Solaxcloud.
-- **SN**: Registration No (communication module SN).
+- **SN**: Registration No (communication module SN) for each desired inverter.
 
 ## Installation
 
@@ -51,9 +53,13 @@ Minimal platform configuration is depicted by the example configuration file bel
   "platforms": [
     {
       "platform": "SolaxCloudAPI",
-      "name": "Solax",
       "tokenId": "20200722185111234567890",
-      "sn": "ABCDEFGHIJ"
+      "inverters": [
+        {
+          "name": "Solax",
+          "sn": "ABCDEFGHIJ"
+        }
+      ],
     }
   ]
 }
@@ -63,9 +69,8 @@ Configuration parameters are described on the table below:
 | **Parameter**      | **Type** |  **Description**                                                                                                                |  **Default**  | **Mandatory?** |
 | ------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------:| :------------: |
 | `platform`         |  string  |  Platform name (must be SolaxCloudAPI)                                                                                          |     -         |       Y        |
-| `name`             |  string  |  Inverter name, used as prefix for accessory naming                                                                             |     -         |       Y        |
 | `tokenId`          |  string  |  Users get information from Solax Cloud through the granted tokenID. Please obtain your tokenID on the API page of Solax Cloud  |     -         |       Y        |
-| `sn`               |  string  |  Registration No. (inverter module SN)                                                                                          |     -         |       Y        |
+| `inverters`        |  array   |  Array of configured inverters as objects with `{ name: string, sn: string }`, where `name` is the inverter name, used as prefix for accessory naming and `sn` is the inverter registration no. (inverter module SN). |     -         |       Y        |
 | `pollingFrequency` |  number  |  Plugin data polling frequency from Solax Cloud (in seconds)                                                                    |     300       |       N        |
 | `smoothingMeters`  |  boolean |  Whether to create additional meters by smoothing raw values from Solax Cloud                                                   |     true      |       N        |
 | `smoothingMethod`  |  string  |  Statistical method to use for smoothing raw values from Solax Cloud (simple or exponential moving average - "sma" or "ema")    |     "sma"     |       N        |
@@ -91,11 +96,11 @@ If you want to rely solely on the native Home App, please enable the `pureHomeAp
 
 # Automation
 
-Automation can be achieved with the help of the virtual **Update** motion sensor that was specifically tailored for this effect. This motion sensor will be triggered whenever data gets updated from the Solax Cloud API (according to what is defined on the `pollingFrequency` configuration setting). 
+Automation can be achieved with the help of the virtual **Update** motion sensor that was specifically tailored for this effect and which is available for each inverter. This motion sensor will be triggered whenever inverter data gets updated from the Solax Cloud API (according to what is defined on the `pollingFrequency` configuration setting). 
 
 <img src="images/plugin-accessories-eve.png" width="50%" height="50%">
 
-Motion is detected by the **Update** motion sensor whenever there is newly fetched data from Solax Cloud. Using this sensor as a trigger combined with power and energy data from the virtual outlets enumerated above forms the basic building blocks for defining an automation.
+Motion is detected by the **Update** motion sensor whenever there is newly fetched inverter data from Solax Cloud. Using this sensor as a trigger combined with power and energy data from the virtual outlets enumerated above forms the basic building blocks for defining an automation.
 
 ## Automation example
 
@@ -178,4 +183,5 @@ Next planned plugin releases should include:
 - [X] Consumption history through the [fakegato-history](https://github.com/simont77/fakegato-history) module
 - [x] Enable support for "pure" Home App accessories (power meters will be exposed as Ambient Light sensors)
 - [x] Add "smooth" accessories for power meters (compensating for sporadic scenarios like cloud a passing)
-- [ ] Accessories for battery state and consumptions (do not have one available)
+- [x] Support for multiple inverters
+- [ ] Accessories for battery state and consumptions (work in progress)

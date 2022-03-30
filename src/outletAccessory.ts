@@ -1,10 +1,11 @@
-import { Service, AccessoryPlugin, Logging, CharacteristicGetCallback } from 'homebridge';
+import { Service, AccessoryPlugin, Logging, CharacteristicGetCallback, API } from 'homebridge';
 
-import { SolaxCloudAPIPlatform } from './platform';
 import { SolaxPlatformAccessory } from './platformAccessory';
 
 import { Statistics } from './statistics';
 
+import { EveHomeKitTypes } from 'homebridge-lib';
+import fakegato from 'fakegato-history';
 import { FakeGatoHistoryService } from 'fakegato-history';
 
 /**
@@ -18,6 +19,16 @@ const MAX_POWER_SERIES_SIZE = 1024;
  * Outlet use is inferred from a positive power comsumption.
  */
 export class SolaxOutletAccessory extends SolaxPlatformAccessory implements AccessoryPlugin {
+
+  /**
+   * Eve Homekit types helper
+   * */
+  private readonly eve: EveHomeKitTypes;
+
+  /**
+   * Eve Service for fakegato.
+   */
+  private readonly eveService: fakegato;
 
   /**
    * Outlet service with power meter.
@@ -51,38 +62,41 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
 
   /**
    * Solax virtual outlet class constructor.
-   * @param {SolaxCloudApiPlatform} platform The API Platform for Solax Cloud.
    * @param {Logging} log The platform logging for homebridge.
+   * @param {API} api The API for Solax Cloud platform.
    * @param {string} name The accessory name.
    * @param {string} serial "Real world" serial number for this accessory.
    * @param {string} model Accessory model.
    */
-  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serial: string, model: string) {
-    super(platform, log, name, serial, model);
-
-    const hap = this.platform.api.hap;
+  constructor(log: Logging, api: API, name: string, serial: string, model: string) {
+    super(log, api, name, serial, model);
 
     this.log.debug(`Creating outlet "${this.name}"`);
 
+    // init fakegato objects
+    this.eve = new EveHomeKitTypes(this.api);
+    this.eveService = fakegato(this.api);
+
     // create power meter service
-    this.outletService = new this.platform.eve.Services.Outlet(this.name);
+    this.outletService = new this.eve.Services.Outlet(this.name);
 
     // outlet on/off state
-    this.outletService.getCharacteristic(hap.Characteristic.On).on(hap.CharacteristicEventTypes.GET, this.getState.bind(this));
+    this.outletService.getCharacteristic(this.api.hap.Characteristic.On)
+      .on(this.api.hap.CharacteristicEventTypes.GET, this.getState.bind(this));
 
     // in use
     //this.outletService.getCharacteristic(hap.Characteristic.OutletInUse).on(hap.CharacteristicEventTypes.GET, this.getState.bind(this));
 
     // current consumption
-    this.outletService.getCharacteristic(this.platform.eve.Characteristics.CurrentConsumption)
-      .on(hap.CharacteristicEventTypes.GET, this.getPowerConsumption.bind(this));
+    this.outletService.getCharacteristic(this.eve.Characteristics.CurrentConsumption)
+      .on(this.api.hap.CharacteristicEventTypes.GET, this.getPowerConsumption.bind(this));
 
     // total consumption
-    this.outletService.getCharacteristic(this.platform.eve.Characteristics.TotalConsumption)
-      .on(hap.CharacteristicEventTypes.GET, this.getTotalEnergyConsumption.bind(this));
+    this.outletService.getCharacteristic(this.eve.Characteristics.TotalConsumption)
+      .on(this.api.hap.CharacteristicEventTypes.GET, this.getTotalEnergyConsumption.bind(this));
 
     // history logging services
-    this.loggingService = new this.platform.eveService('energy', this, { storage: 'fs', log: this.log, disableRepeatLastData: true } );
+    this.loggingService = new this.eveService('energy', this, { storage: 'fs', log: this.log, disableRepeatLastData: true } );
 
     log.info(`Outlet "${name}" created!`);
   }
@@ -173,7 +187,7 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
 
     this.powerConsumption = powerConsumption >= 0 ? powerConsumption: 0;
 
-    this.outletService.getCharacteristic(this.platform.eve.Characteristics.CurrentConsumption).updateValue(this.powerConsumption);
+    this.outletService.getCharacteristic(this.eve.Characteristics.CurrentConsumption).updateValue(this.powerConsumption);
 
     // add entries to history
     this.loggingService.addEntry({time: Math.round(new Date().valueOf() / 1000), power: this.powerConsumption });
@@ -200,7 +214,7 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
 
     this.totalEnergyConsumption = totalEnergyConsumption;
 
-    this.outletService.getCharacteristic(this.platform.eve.Characteristics.TotalConsumption).updateValue(this.totalEnergyConsumption);
+    this.outletService.getCharacteristic(this.eve.Characteristics.TotalConsumption).updateValue(this.totalEnergyConsumption);
   }
 
   /**

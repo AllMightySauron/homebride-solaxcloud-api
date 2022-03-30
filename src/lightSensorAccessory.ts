@@ -1,6 +1,5 @@
-import { AccessoryPlugin, CharacteristicEventTypes, CharacteristicGetCallback, Logging, Service } from 'homebridge';
+import { AccessoryPlugin, API, CharacteristicEventTypes, CharacteristicGetCallback, Logging, Service } from 'homebridge';
 
-import { SolaxCloudAPIPlatform } from './platform';
 import { SolaxPlatformAccessory } from './platformAccessory';
 
 /**
@@ -19,23 +18,21 @@ export class SolaxLightSensorAccessory extends SolaxPlatformAccessory implements
 
   /**
    * Solax virtual light sensor class constructor.
-   * @param {SolaxCloudApiPlatform} platform The API Platform for Solax Cloud.
    * @param {Logging} log The platform logging for homebridge.
+   * @param {API} api The platform API.
    * @param {string} name The accessory name.
    * @param {string} serial "Real world" serial number for this accessory.
    * @param {string} model Accessory model.
    */
-  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serial: string, model: string) {
-    super(platform, log, name, serial, model);
-
-    const hap = this.platform.api.hap;
+  constructor(log: Logging, api: API, name: string, serial: string, model: string) {
+    super(log, api, name, serial, model);
 
     this.log.debug(`Creating light "${this.name}"`);
 
-    this.lightService = new hap.Service.LightSensor(name);
+    this.lightService = new this.api.hap.Service.LightSensor(name);
 
     this.lightService
-      .getCharacteristic(hap.Characteristic.CurrentAmbientLightLevel)
+      .getCharacteristic(this.api.hap.Characteristic.CurrentAmbientLightLevel)
       .on(CharacteristicEventTypes.GET, this.getAmbientLightLevel.bind(this));
 
     log.info(`Solax light (watts reader) ${name} created!`);
@@ -60,7 +57,7 @@ export class SolaxLightSensorAccessory extends SolaxPlatformAccessory implements
     // Minimum value allowed for light sensor is 0.1
     this.lux = Math.max(0.1, lux);
 
-    this.lightService.updateCharacteristic(this.platform.api.hap.Characteristic.CurrentAmbientLightLevel, this.lux);
+    this.lightService.updateCharacteristic(this.api.hap.Characteristic.CurrentAmbientLightLevel, this.lux);
   }
 
   /*

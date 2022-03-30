@@ -1,8 +1,7 @@
-import { Service, AccessoryPlugin, Logging, CharacteristicGetCallback } from 'homebridge';
+import { Service, AccessoryPlugin, Logging, CharacteristicGetCallback, API } from 'homebridge';
 
 import util from 'util';
 
-import { SolaxCloudAPIPlatform } from './platform';
 import { SolaxPlatformAccessory } from './platformAccessory';
 
 /**
@@ -34,23 +33,21 @@ export class SolaxMotionAccessory extends SolaxPlatformAccessory implements Acce
 
   /**
    * Solax virtual motion sensor class constructor.
-   * @param {SolaxCloudApiPlatform} platform The API Platform for Solax Cloud.
    * @param {Logging} log The platform logging for homebridge.
+   * @param {API} api The API for Solax Cloud platform.
    * @param {string} name The accessory name.
    * @param {string} serial "Real-world" serial number for this accessory.
    * @param {string} model Accessory model.
    */
-  constructor(platform: SolaxCloudAPIPlatform, log: Logging, name: string, serial: string, model: string) {
-    super(platform, log, name, serial, model);
-
-    const hap = this.platform.api.hap;
+  constructor(log: Logging, api: API, name: string, serial: string, model: string) {
+    super(log, api, name, serial, model);
 
     this.log.debug(`Creating motion sensor "${this.name}"`);
 
-    this.motionService = new hap.Service.MotionSensor(this.name);
+    this.motionService = new this.api.hap.Service.MotionSensor(this.name);
     this.motionService
-      .getCharacteristic(hap.Characteristic.MotionDetected)
-      .on(hap.CharacteristicEventTypes.GET, this.getState.bind(this));
+      .getCharacteristic(this.api.hap.Characteristic.MotionDetected)
+      .on(this.api.hap.CharacteristicEventTypes.GET, this.getState.bind(this));
 
     log.info(`Motion sensor "${name}" created!`);
   }
@@ -75,7 +72,7 @@ export class SolaxMotionAccessory extends SolaxPlatformAccessory implements Acce
     this.log.debug(`${this.name}: SET State (motion=${motion})`);
 
     this.motionService
-      .getCharacteristic(this.platform.api.hap.Characteristic.MotionDetected)
+      .getCharacteristic(this.api.hap.Characteristic.MotionDetected)
       .updateValue(motion);
 
     this.motion = motion;

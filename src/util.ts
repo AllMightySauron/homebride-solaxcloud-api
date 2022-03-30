@@ -35,4 +35,13 @@ export class Util {
     return s.replace(/[^-_ a-zA-Z0-9]/gi, '');
   }
 
+  /**
+   * Returns whether an array has duplicates or not.
+   * @param {unknown[]} array The array to check for duplicates.
+   * @returns {boolean} Whether the array has duplicates.
+   */
+  public static arrayHasDuplicates(array: unknown[]): boolean {
+    return (new Set(array)).size !== array.length;
+  }
+
 }
