@@ -34,11 +34,17 @@ export interface SolaxCloudAPIResult {
     inverterType: string;
     /** Inverter status code */
     inverterStatus: string;
+    /** Update time */
     uploadTime: string;
+    /** Inverter DC Battery power total (W) */
     batPower: number;
+    /** Inverter DC PV power MPPT1 (W) */
     powerdc1: number | null;
+    /** Inverter DC PV power MPPT2 (W) */
     powerdc2: number | null;
+    /** Inverter DC PV power MPPT3 (W) */
     powerdc3: number | null;
+    /** Inverter DC PV power MPPT4 (W) */
     powerdc4: number | null;
 }
 
@@ -168,6 +174,24 @@ export class SolaxCloudAPI {
   }
 
   /**
+   * Gets the inverter power charging battery (in W) from the retrieved API results.
+   * @param {SolaxCloudAPIResult} data The result data retrieved from the Solax Cloud API.
+   * @returns {number} The measured inverter DC power to battery (in W).
+   */
+  public static getInverterPowerToBattery(data: SolaxCloudAPIResult): number {
+    return data.batPower > 0 ? data.batPower : 0;
+  }
+
+  /**
+   * Gets the inverter power drawn from battery (in W) from the retrieved API results.
+   * @param {SolaxCloudAPIResult} data The result data retrieved from the Solax Cloud API.
+   * @returns {number} The measured inverter DC power from battery (in W).
+   */
+  public static getInverterPowerFromBattery(data: SolaxCloudAPIResult): number {
+    return data.batPower < 0 ? -data.batPower : 0;
+  }
+
+  /**
    * Gets the Inverter AC energy out for today (KWh) from the retrieved API results.
    * @param {SolaxCloudAPIResult} data The result data retrieved from the Solax Cloud API.
    * @returns {number} The AC energy output by the inverter today (in KWh).
@@ -183,6 +207,15 @@ export class SolaxCloudAPI {
    */
   public static getYieldTotal(data: SolaxCloudAPIResult): number {
     return data.yieldtotal;
+  }
+
+  /**
+   * Gets the battery State of Charge - Soc (%) from the retrieved API results.
+   * @param {SolaxCloudAPIResult} data The result data retrieved from the Solax Cloud API.
+   * @returns {number} The battery State of Charge for this inverter (%).
+   */
+  public static getBatterySoC(data: SolaxCloudAPIResult): number {
+    return data.soc === null ? 0: data.soc;
   }
 
   /**

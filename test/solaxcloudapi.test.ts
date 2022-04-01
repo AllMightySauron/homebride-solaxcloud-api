@@ -17,14 +17,14 @@ describe('SolaxCloudAPI: Static methods', () => {
       feedinenergy: 24.65,
       consumeenergy: 433.09,
       feedinpowerM2: 0,
-      soc: 0,
+      soc: 25,
       peps1: 0,
       peps2: null,
       peps3: null,
       inverterType: '3',
       inverterStatus: '102',
       uploadTime: '2021-12-06 10:16:59',
-      batPower: 0,
+      batPower: -21,
       powerdc1: 0,
       powerdc2: 1258,
       powerdc3: null,
@@ -34,6 +34,18 @@ describe('SolaxCloudAPI: Static methods', () => {
 
   it('PV Power', () => {
     assert.strictEqual(1258, SolaxCloudAPI.getPVPower(sampleReply.result));
+  });
+
+  it('Battery SoC', () => {
+    assert.strictEqual(25, SolaxCloudAPI.getBatterySoC(sampleReply.result));
+  });
+
+  it('DC From Battery', () => {
+    assert.strictEqual(21, SolaxCloudAPI.getInverterPowerFromBattery(sampleReply.result));
+  });
+
+  it('DC To Battery', () => {
+    assert.strictEqual(0, SolaxCloudAPI.getInverterPowerToBattery(sampleReply.result));
   });
 
   it('Inverter AC Power', () => {
