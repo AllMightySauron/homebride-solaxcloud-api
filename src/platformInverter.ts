@@ -12,12 +12,40 @@ import { SolaxMotionAccessory } from './motionAccessory';
 /**
  * Standard names for accessories.
  */
+export const ACCESSORY_KEYS = {
+  pv: 'pv',
+  inverterToBattery: 'inverterToBattery',
+  inverterFromBattery: 'inverterFromBattery',
+  inverterAC: 'inverterAC',
+  inverterToGrid: 'inverterToGrid',
+  inverterToHouse: 'inverterToHouse',
+  gridToHouse: 'gridToHouse',
+};
+
+/**
+ * Standard names for accessories.
+ */
 const ACCESSORY_NAMES = {
   pv: 'PV',
+  inverterToBattery: 'To Battery',
+  inverterFromBattery: 'From Battery',
   inverterAC: 'AC',
   inverterToGrid: 'To Grid',
   inverterToHouse: 'To House',
   gridToHouse: 'From Grid',
+};
+
+/**
+ * Standar prefixes for accessory serials.
+ */
+const ACCESSORY_SERIAL_PREFIXES = {
+  pv: 'pv',
+  inverterToBattery: 'inv-tobat',
+  inverterFromBattery: 'inv-frombat',
+  inverterAC: 'inv-ac',
+  inverterToGrid: 'inv-grid',
+  inverterToHouse: 'inv-house',
+  gridToHouse: 'grid-house',
 };
 
 /**
@@ -41,6 +69,11 @@ export class SolaxCloudAPIPlatformInverter {
   private sn: string;
 
   /**
+   * Whether this inverter has a battery.
+   **/
+  private batteryInstalled: boolean;
+
+  /**
    * Size of window for statistical smoothing operations.
    */
   private smoothingWindow: number;
@@ -49,6 +82,11 @@ export class SolaxCloudAPIPlatformInverter {
    * API for retrieving data from Solax cloud.
    */
   private solaxCloudAPI: SolaxCloudAPI;
+
+  /**
+   * Virtual motion sensor triggered by data updates from Solax Cloud.
+   */
+  private motionUpdate!: SolaxMotionAccessory;
 
   /**
    * Outlets with raw data gathered from Solax Cloud.
@@ -61,11 +99,6 @@ export class SolaxCloudAPIPlatformInverter {
     * prevent events like the temporary passage of a cloud to directly affect values.
     */
   private smoothOutlets!: PlatformOutletMeters;
-
-  /**
-    * Virtual motion sensor triggered by data updates from Solax Cloud.
-    */
-  private motionUpdate!: SolaxMotionAccessory;
 
   /**
     * Ambient light sensors for Power Consumption (pure Home App config).
@@ -92,7 +125,9 @@ export class SolaxCloudAPIPlatformInverter {
     * @param smoothingWindow
     * @returns
     */
-  constructor (log: Logging, config: PlatformConfig, api: API, tokenId: string, sn: string, name: string, smoothingWindow: number) {
+  constructor (log: Logging, config: PlatformConfig, api: API,
+    tokenId: string, sn: string, name: string, hasBattery: boolean,
+    smoothingWindow: number) {
     // store values in properties
     this.log = log;
     this.config = config;
@@ -103,6 +138,7 @@ export class SolaxCloudAPIPlatformInverter {
     this.name = name;
 
     this.smoothingWindow = smoothingWindow;
+    this.batteryInstalled = hasBattery;
 
     this.log.info(`Initialing acessories for inverter "${name}" (SN="${sn}")...`);
 
@@ -125,19 +161,27 @@ export class SolaxCloudAPIPlatformInverter {
 
     // setup raw outlet accessories
     this.rawOutlets = {
-      pv: new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.pv}`, `pv-${this.sn}`, inverterModel),
+      pv:
+        new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.pv}`,
+          `${ACCESSORY_SERIAL_PREFIXES.pv}-${this.sn}`, inverterModel),
+      inverterFromBattery:
+        new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterFromBattery}`,
+          `${ACCESSORY_SERIAL_PREFIXES.inverterFromBattery}-${this.sn}`, inverterModel),
+      inverterToBattery:
+        new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToBattery}`,
+          `${ACCESSORY_SERIAL_PREFIXES.inverterToBattery}-${this.sn}`, inverterModel),
       inverterAC:
-          new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterAC}`,
-            `inv-ac-${this.sn}`, inverterModel),
+        new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterAC}`,
+          `${ACCESSORY_SERIAL_PREFIXES.inverterAC}-${this.sn}`, inverterModel),
       inverterToGrid:
-          new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToGrid}`,
-            `inv-grid-${this.sn}`, inverterModel),
+        new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToGrid}`,
+          `${ACCESSORY_SERIAL_PREFIXES.inverterToGrid}-${this.sn}`, inverterModel),
       inverterToHouse:
-          new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToHouse}`,
-            `inv-house-${this.sn}`, inverterModel),
+        new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToHouse}`,
+          `${ACCESSORY_SERIAL_PREFIXES.inverterToHouse}-${this.sn}`, inverterModel),
       gridToHouse:
-          new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.gridToHouse}`,
-            `grid-house-${this.sn}`, inverterModel),
+        new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.gridToHouse}`,
+          `${ACCESSORY_SERIAL_PREFIXES.gridToHouse}-${this.sn}`, inverterModel),
     };
 
     // setup update motion sensor
@@ -149,145 +193,112 @@ export class SolaxCloudAPIPlatformInverter {
         [ this.rawOutlets.pv, this.rawOutlets.inverterAC, this.rawOutlets.inverterToGrid,
           this.rawOutlets.inverterToHouse, this.rawOutlets.gridToHouse, this.motionUpdate ];
 
+    if (this.batteryInstalled) {
+      this.solaxAccessories.push(this.rawOutlets.inverterFromBattery, this.rawOutlets.inverterToBattery);
+    }
+
     // check if "pure" Home App accessories are needed
     if (this.config.pureHomeApp) {
       // add raw light sensors
       this.rawLightSensors = {
         pv: new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.pv} sensor`,
-          `pv-light-${this.sn}`, inverterModel),
+          `${ACCESSORY_SERIAL_PREFIXES.pv}-light-${this.sn}`, inverterModel),
+        inverterFromBattery:
+          new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterFromBattery} sensor`,
+            `${ACCESSORY_SERIAL_PREFIXES.inverterFromBattery}-light-${this.sn}`, inverterModel),
+        inverterToBattery:
+          new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToBattery} sensor`,
+            `${ACCESSORY_SERIAL_PREFIXES.inverterToBattery}-light-${this.sn}`, inverterModel),
         inverterAC:
-            new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterAC} sensor`,
-              `inv-ac-light-${this.sn}`, inverterModel),
+          new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterAC} sensor`,
+            `${ACCESSORY_SERIAL_PREFIXES.inverterAC}-light-${this.sn}`, inverterModel),
         inverterToGrid:
-            new SolaxLightSensorAccessory(this.log, this.api,
-              `${this.name} ${ACCESSORY_NAMES.inverterToGrid} sensor`, `inv-grid-light-${this.sn}`, inverterModel),
+          new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToGrid} sensor`,
+            `${ACCESSORY_SERIAL_PREFIXES.inverterToGrid}-light-${this.sn}`, inverterModel),
         inverterToHouse:
-            new SolaxLightSensorAccessory(this.log, this.api,
-              `${this.name} ${ACCESSORY_NAMES.inverterToHouse} sensor`, `inv-house-light-${this.sn}`, inverterModel),
+          new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToHouse} sensor`,
+            `${ACCESSORY_SERIAL_PREFIXES.inverterToHouse}-light-${this.sn}`, inverterModel),
         gridToHouse:
-            new SolaxLightSensorAccessory(this.log, this.api,
-              `${this.name} ${ACCESSORY_NAMES.gridToHouse} sensor`, `grid-house-light-${this.sn}`, inverterModel),
+          new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.gridToHouse} sensor`,
+            `${ACCESSORY_SERIAL_PREFIXES.gridToHouse}-light-${this.sn}`, inverterModel),
       };
 
       this.solaxAccessories.push(this.rawLightSensors.pv, this.rawLightSensors.inverterAC, this.rawLightSensors.inverterToGrid,
         this.rawLightSensors.inverterToHouse, this.rawLightSensors.gridToHouse);
 
+      if (this.batteryInstalled) {
+        this.solaxAccessories.push(this.rawLightSensors.inverterFromBattery, this.rawLightSensors.inverterToBattery);
+      }
+
       if (this.config.smoothMeters) {
         // add smooth light sensors
         this.smoothLightSensors = {
           pv:
-              new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.pv} sensor (smooth)`,
-                `pv-light-${this.sn}`, inverterModel),
+            new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.pv} sensor (smooth)`,
+              `${ACCESSORY_SERIAL_PREFIXES.pv}-light-smooth-${this.sn}`, inverterModel),
+          inverterFromBattery:
+            new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterFromBattery} sensor (smooth)`,
+              `${ACCESSORY_SERIAL_PREFIXES.inverterFromBattery}-light-smooth-${this.sn}`, inverterModel),
+          inverterToBattery:
+            new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToBattery} sensor (smooth)`,
+              `${ACCESSORY_SERIAL_PREFIXES.inverterToBattery}-light-smooth-${this.sn}`, inverterModel),
           inverterAC:
-              new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterAC} sensor (smooth)`,
-                `inv-ac-light-smooth-${this.sn}`, inverterModel),
+            new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterAC} sensor (smooth)`,
+              `${ACCESSORY_SERIAL_PREFIXES.inverterAC}-light-smooth-${this.sn}`, inverterModel),
           inverterToGrid:
-              new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToGrid} sensor (smooth)`,
-                `inv-grid-light-smooth-${this.sn}`, inverterModel),
+            new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToGrid} sensor (smooth)`,
+              `${ACCESSORY_SERIAL_PREFIXES.inverterToGrid}-light-smooth-${this.sn}`, inverterModel),
           inverterToHouse:
-              new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToHouse} sensor (smooth)`,
-                `inv-house-light-smooth-${this.sn}`, inverterModel),
+            new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToHouse} sensor (smooth)`,
+              `${ACCESSORY_SERIAL_PREFIXES.inverterToHouse}-light-smooth-${this.sn}`, inverterModel),
           gridToHouse:
-              new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.gridToHouse} sensor (smooth)`,
-                `grid-house-light-smooth-${this.sn}`, inverterModel),
+            new SolaxLightSensorAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.gridToHouse} sensor (smooth)`,
+              `${ACCESSORY_SERIAL_PREFIXES.gridToHouse}-light-smooth-${this.sn}`, inverterModel),
         };
 
         this.solaxAccessories.push(this.smoothLightSensors.pv, this.smoothLightSensors.inverterAC, this.smoothLightSensors.inverterToGrid,
           this.smoothLightSensors.inverterToHouse, this.smoothLightSensors.gridToHouse);
+
+        if (this.batteryInstalled) {
+          this.solaxAccessories.push(this.smoothLightSensors.inverterFromBattery, this.smoothLightSensors.inverterToBattery);
+        }
       }
     } else {
       if (this.config.smoothMeters) {
         // setup smooth outlet accessories
         this.smoothOutlets = {
           pv:
-              new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.pv} (smooth)`,
-                `pv-smooth-${this.sn}`, inverterModel),
+            new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.pv} (smooth)`,
+              `${ACCESSORY_SERIAL_PREFIXES.pv}-smooth-${this.sn}`, inverterModel),
+          inverterFromBattery:
+            new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterFromBattery} (smooth)`,
+              `${ACCESSORY_SERIAL_PREFIXES.inverterFromBattery}-smooth-${this.sn}`, inverterModel),
+          inverterToBattery:
+            new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToBattery} (smooth)`,
+              `${ACCESSORY_SERIAL_PREFIXES.inverterToBattery}-smooth-${this.sn}`, inverterModel),
           inverterAC:
-              new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterAC} (smooth)`,
-                `inv-ac-smooth-${this.sn}`, inverterModel),
+            new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterAC} (smooth)`,
+              `${ACCESSORY_SERIAL_PREFIXES.inverterAC}-smooth-${this.sn}`, inverterModel),
           inverterToGrid:
               new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToGrid} (smooth)`,
-                `inv-grid-smooth-${this.sn}`, inverterModel),
+                `${ACCESSORY_SERIAL_PREFIXES.inverterToGrid}-smooth-${this.sn}`, inverterModel),
           inverterToHouse:
               new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToHouse} (smooth)`,
-                `inv-house-smooth-${this.sn}`, inverterModel),
+                `${ACCESSORY_SERIAL_PREFIXES.inverterToHouse}-smooth-${this.sn}`, inverterModel),
           gridToHouse:
               new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.gridToHouse} (smooth)`,
-                `grid-house-smooth-${this.sn}`, inverterModel),
+                `${ACCESSORY_SERIAL_PREFIXES.gridToHouse}-smooth-${this.sn}`, inverterModel),
         };
 
         this.solaxAccessories.push(this.smoothOutlets.pv, this.smoothOutlets.inverterAC, this.smoothOutlets.inverterToGrid,
           this.smoothOutlets.inverterToHouse, this.smoothOutlets.gridToHouse);
+
+        if (this.batteryInstalled) {
+          this.solaxAccessories.push(this.smoothOutlets.inverterFromBattery, this.smoothOutlets.inverterToBattery);
+        }
       }
     }
 
-  }
-
-  /**
-    * Updates smooth ambient light sensors data from raw outlet data by applying configured smoothing function.
-    */
-  private updateSmoothLightSensors() {
-    this.smoothLightSensors.pv.setAmbientLightLevel(
-      this.rawOutlets.pv.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
-    );
-    this.smoothLightSensors.inverterAC.setAmbientLightLevel(
-      this.rawOutlets.inverterAC.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
-    );
-    this.smoothLightSensors.inverterToGrid.setAmbientLightLevel(
-      this.rawOutlets.inverterToGrid.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
-    );
-    this.smoothLightSensors.inverterToHouse.setAmbientLightLevel(
-      this.rawOutlets.inverterToHouse.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
-    );
-    this.smoothLightSensors.gridToHouse.setAmbientLightLevel(
-      this.rawOutlets.gridToHouse.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
-    );
-  }
-
-  /**
-    * Update raw ambient light sensors with power consumption data from Solax Cloud API.
-    * @param {SolaxCloudAPIResponse} apiData API data retrieved from Solax Cloud.
-    */
-  private updateRawLightSensors(apiData: SolaxCloudAPIResponse) {
-    this.rawLightSensors.pv.setAmbientLightLevel(SolaxCloudAPI.getPVPower(apiData.result));
-    this.rawLightSensors.inverterAC.setAmbientLightLevel(SolaxCloudAPI.getInverterACPower(apiData.result));
-    this.rawLightSensors.inverterToGrid.setAmbientLightLevel(SolaxCloudAPI.getInverterPowerToGrid(apiData.result));
-    this.rawLightSensors.inverterToHouse.setAmbientLightLevel(SolaxCloudAPI.getInverterPowerToHouse(apiData.result));
-    this.rawLightSensors.gridToHouse.setAmbientLightLevel(SolaxCloudAPI.getGridPowerToHouse(apiData.result));
-  }
-
-  /**
-    * Updates smooth outlet data from raw outlet data by applying configured smoothing function.
-    */
-  private updateSmoothOutlets() {
-    this.smoothOutlets.pv.setPowerConsumption(
-      this.rawOutlets.pv.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
-    );
-    this.smoothOutlets.inverterAC.setPowerConsumption(
-      this.rawOutlets.inverterAC.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
-    );
-    this.smoothOutlets.inverterToGrid.setPowerConsumption(
-      this.rawOutlets.inverterToGrid.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
-    );
-    this.smoothOutlets.inverterToHouse.setPowerConsumption(
-      this.rawOutlets.inverterToHouse.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
-    );
-    this.smoothOutlets.gridToHouse.setPowerConsumption(
-      this.rawOutlets.gridToHouse.getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow),
-    );
-  }
-
-  /**
-    * Update raw outlet data from API data read from Solax Cloud.
-    * @param {SolaxCloudAPIResponse} apiData Solax Cloud API data.
-    */
-  private updateRawOutlets(apiData: SolaxCloudAPIResponse) {
-    this.rawOutlets.pv.setPowerConsumption(SolaxCloudAPI.getPVPower(apiData.result));
-    this.rawOutlets.inverterAC.setPowerConsumption(SolaxCloudAPI.getInverterACPower(apiData.result));
-    this.rawOutlets.inverterAC.setTotalEnergyConsumption(SolaxCloudAPI.getYieldTotal(apiData.result));
-    this.rawOutlets.inverterToGrid.setPowerConsumption(SolaxCloudAPI.getInverterPowerToGrid(apiData.result));
-    this.rawOutlets.inverterToHouse.setPowerConsumption(SolaxCloudAPI.getInverterPowerToHouse(apiData.result));
-    this.rawOutlets.gridToHouse.setPowerConsumption(SolaxCloudAPI.getGridPowerToHouse(apiData.result));
   }
 
   /**
@@ -295,32 +306,96 @@ export class SolaxCloudAPIPlatformInverter {
     * @param {SolaxCloudAPIResponse} apiData API data from Solax Cloud.
     */
   private updateAccessories(apiData: SolaxCloudAPIResponse) {
-    // update raw outlets on/off, power & energy settings
-    this.updateRawOutlets(apiData);
+    // update raw sensors
+    this.setRawPower(ACCESSORY_KEYS.pv, SolaxCloudAPI.getPVPower(apiData.result));
+    this.setRawPower(ACCESSORY_KEYS.inverterFromBattery, SolaxCloudAPI.getInverterPowerFromBattery(apiData.result));
+    this.setRawPower(ACCESSORY_KEYS.inverterToBattery, SolaxCloudAPI.getInverterPowerToBattery(apiData.result));
+    this.setRawPower(ACCESSORY_KEYS.inverterAC, SolaxCloudAPI.getInverterACPower(apiData.result));
+    this.setRawEnergy(ACCESSORY_KEYS.inverterAC, SolaxCloudAPI.getYieldTotal(apiData.result));
+    this.setRawPower(ACCESSORY_KEYS.inverterToGrid, SolaxCloudAPI.getInverterPowerToGrid(apiData.result));
+    this.setRawPower(ACCESSORY_KEYS.inverterToHouse, SolaxCloudAPI.getInverterPowerToHouse(apiData.result));
+    this.setRawPower(ACCESSORY_KEYS.gridToHouse, SolaxCloudAPI.getGridPowerToHouse(apiData.result));
 
-    if (this.config.pureHomeApp) {
-      // update raw light sensors with power consumption
-      this.updateRawLightSensors(apiData);
-
-      if (this.config.smoothMeters) {
-        // update smooth light sensors from raw outlets by applying smoothing function to power consumption
-        this.updateSmoothLightSensors();
-      }
-    } else {
-      if (this.config.smoothMeters) {
-        // update smooth outlets data from raw outlets by applying smoothing function to power consumption
-        this.updateSmoothOutlets();
-      }
+    if (this.config.smoothMeters) {
+      // update smooth light sensors from raw outlets by applying smoothing function to power consumption
+      this.setSmoothPower(ACCESSORY_KEYS.pv);
+      this.setSmoothPower(ACCESSORY_KEYS.inverterFromBattery);
+      this.setSmoothPower(ACCESSORY_KEYS.inverterToBattery);
+      this.setSmoothPower(ACCESSORY_KEYS.inverterAC);
+      this.setSmoothPower(ACCESSORY_KEYS.inverterToGrid);
+      this.setSmoothPower(ACCESSORY_KEYS.inverterToHouse);
+      this.setSmoothPower(ACCESSORY_KEYS.gridToHouse);
     }
 
-    // update motion sensor
+    // notify update with motion sensor
+    this.setMotionUpdate();
+  }
+
+  /**
+   * Sets virtual update motion detector to true to notify of new data update.
+   */
+  public setMotionUpdate() {
     this.motionUpdate.setState(true);
+  }
+
+  /**
+   * Sets raw accessory power for this inverter.
+   * @param {string} key Accessory key.
+   * @param {number} power Power to set (in Watt).
+   */
+  public setRawPower(key: string, power: number) {
+    this.rawOutlets[key].setPowerConsumption(power);
+
+    if (this.config.pureHomeApp) {
+      this.rawLightSensors[key].setAmbientLightLevel(power);
+    }
+  }
+
+  /**
+   * Gets raw accessory power for this inverter.
+   * @param {string} key Accessory key.
+   * @returns {number} Power consumptions for this accessory.
+   */
+  public getRawPower(key: string): number {
+    return this.rawOutlets[key].getPowerConsumption();
+  }
+
+  /**
+   * Gets raw accessory energy for this inverter.
+   * @param {string} key Accessory key.
+   * @returns {number} The energy consumption for the desired acessory (in Wh).
+   */
+  public getRawEnergy(key: string): number {
+    return this.rawOutlets[key].getTotalEnergyConsumption();
+  }
+
+  /**
+   * Sets raw accessory energy for this inverter.
+   * @param {string} key Accessory key.
+   * @param {number} energy Energy consumption to set (in Wh).
+   */
+  public setRawEnergy(key: string, energy: number) {
+    this.rawOutlets[key].setTotalEnergyConsumption(energy);
+  }
+
+  /**
+   * Sets smooth accessory power from raw accessory power for this inverter.
+   * @param {string} key Accessory key.
+   */
+  public setSmoothPower(key: string) {
+    const smoothPower = this.rawOutlets[key].getSmoothPowerConsumption(this.config.smoothingMethod, this.smoothingWindow);
+
+    if (this.config.pureHomeApp) {
+      this.smoothLightSensors[key].setAmbientLightLevel(smoothPower);
+    } else {
+      this.smoothOutlets[key].setPowerConsumption(smoothPower);
+    }
   }
 
   /**
    * Update data from this inverter by using the Solax Cloud API
    */
-  public updateInverterData() {
+  public updateInverterDataFromCloud() {
     try {
       this.log.info(`Retrieving data from Solax Cloud API for inverter "${this.name}" (SN="${this.sn}")`);
 
@@ -336,6 +411,14 @@ export class SolaxCloudAPIPlatformInverter {
     } catch (error) {
       this.log.error(`Failed to read from Solax Cloud API for inverter "${this.name}" (SN="${this.sn})". Error: ${error}`);
     }
+  }
+
+  /**
+   * Returns whether this inverter has a battery installed.
+   * @returns {boolean} Whether this inverter battery has a battery installed.
+   */
+  public hasBattery(): boolean {
+    return this.batteryInstalled;
   }
 
   /**

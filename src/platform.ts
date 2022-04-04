@@ -1,7 +1,7 @@
 import { AccessoryPlugin, API, StaticPlatformPlugin, Logging, PlatformConfig, APIEvent } from 'homebridge';
 
 import { Util } from './util';
-import { SolaxCloudAPIPlatformInverter } from './platformInverter';
+import { SolaxCloudAPIPlatformInverter, ACCESSORY_KEYS } from './platformInverter';
 
 import util from 'util';
 
@@ -64,6 +64,11 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
   private inverters: SolaxCloudAPIPlatformInverter[] = [];
 
   /**
+   * Inverter totalizer.
+   **/
+  private allInverters!: SolaxCloudAPIPlatformInverter;
+
+  /**
    * Platform constructor.
    * @param log
    * @param config
@@ -95,11 +100,21 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       this.config.inverters.forEach(inverter => {
         // setup new inverter
         const platformInverter: SolaxCloudAPIPlatformInverter =
-          new SolaxCloudAPIPlatformInverter(log, config, api, this.config.tokenId, inverter.sn, inverter.name, this.smoothingWindow);
+          new SolaxCloudAPIPlatformInverter(log, config, api,
+            this.config.tokenId, inverter.sn, inverter.name, inverter.hasBattery,
+            this.smoothingWindow);
 
         // add new inverter to list
         this.inverters.push(platformInverter);
       });
+
+      // create inverter totalizers
+      if (this.inverters.length > 1) {
+        this.allInverters = new SolaxCloudAPIPlatformInverter(log, config, api,
+          this.config.tokenId, 'total', 'All inverters',
+          this.inverters.map(inverter => + inverter.hasBattery()).reduce((a, b) => a + b, 0) > 0,
+          this.smoothingWindow);
+      }
 
       // start data fetching
       this.fetchDataPeriodically();
@@ -128,13 +143,45 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
   }
 
   /**
+   * Update data for virtual inverter totalizer based on individual inverter data.
+   */
+  private updateAllInvertersData() {
+    this.allInverters.setRawPower(ACCESSORY_KEYS.pv,
+      this.inverters.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.pv)).reduce((a, b) => a + b, 0));
+    this.allInverters.setRawPower(ACCESSORY_KEYS.inverterFromBattery,
+      this.inverters.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.inverterFromBattery)).reduce((a, b) => a + b, 0));
+    this.allInverters.setRawPower(ACCESSORY_KEYS.inverterToBattery,
+      this.inverters.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.inverterToBattery)).reduce((a, b) => a + b, 0));
+    this.allInverters.setRawPower(ACCESSORY_KEYS.inverterAC,
+      this.inverters.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.inverterAC)).reduce((a, b) => a + b, 0));
+    this.allInverters.setRawEnergy(ACCESSORY_KEYS.inverterAC,
+      this.inverters.map(inverter => inverter.getRawEnergy(ACCESSORY_KEYS.inverterAC)).reduce((a, b) => a + b, 0));
+    this.allInverters.setRawPower(ACCESSORY_KEYS.inverterToGrid,
+      this.inverters.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.inverterToGrid)).reduce((a, b) => a + b, 0));
+    this.allInverters.setRawPower(ACCESSORY_KEYS.inverterToHouse,
+      this.inverters.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.inverterToHouse)).reduce((a, b) => a + b, 0));
+    this.allInverters.setRawPower(ACCESSORY_KEYS.gridToHouse,
+      this.inverters.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.gridToHouse)).reduce((a, b) => a + b, 0));
+
+    // notify update with motion
+    this.allInverters.setMotionUpdate();
+  }
+
+  /**
    * Periodically retrieves inverter data from Solax Cloud API using configured tokenID and SN.
    */
   private async fetchDataPeriodically(): Promise<void> {
     // loop over inverters and update its data
-    this.inverters.forEach(inverter => inverter.updateInverterData());
+    this.inverters.forEach(inverter => inverter.updateInverterDataFromCloud());
 
     this.log.info(`Updated data from Solax Cloud API, sleeping for ${this.config.pollingFrequency} seconds.`);
+
+    // update inverter totalizers if needed
+    if (this.inverters.length > 1) {
+      this.log.info ('Computing inverter totals...');
+
+      this.updateAllInvertersData();
+    }
 
     this.sleep(this.config.pollingFrequency * 1000).then(async () => await this.fetchDataPeriodically());
   }
@@ -281,6 +328,11 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
 
     // loop over inverters and add accessories
     this.inverters.forEach(inverter => accessories.push(...inverter.getAccessories()));
+
+    // add inverter totalizer accessories if needed
+    if (this.inverters.length > 1) {
+      accessories.push(...this.allInverters.getAccessories());
+    }
 
     callback(accessories);
   }

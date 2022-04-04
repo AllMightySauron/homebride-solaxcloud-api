@@ -39,6 +39,13 @@
               "default": "ABCDEFGHIJ",
               "minLength": 10,
               "maxLength": 10
+            },
+            "hasBattery": {
+              "title": "Battery installed?",
+              "type": "boolean",
+              "required": false,
+              "description": "Whether this inverter has a battery installed.",
+              "default": false
             }
           }
         }
