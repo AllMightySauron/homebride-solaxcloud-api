@@ -339,6 +339,15 @@ export class SolaxCloudAPIPlatformInverter {
   }
 
   /**
+   * Gets raw accessory power for this inverter.
+   * @param {string} key Accessory key.
+   * @returns {number} Power consumptions for this accessory.
+   */
+  public getRawPower(key: string): number {
+    return this.rawOutlets[key].getPowerConsumptionValue();
+  }
+
+  /**
    * Sets raw accessory power for this inverter.
    * @param {string} key Accessory key.
    * @param {number} power Power to set (in Watt).
@@ -352,21 +361,12 @@ export class SolaxCloudAPIPlatformInverter {
   }
 
   /**
-   * Gets raw accessory power for this inverter.
-   * @param {string} key Accessory key.
-   * @returns {number} Power consumptions for this accessory.
-   */
-  public getRawPower(key: string): number {
-    return this.rawOutlets[key].getPowerConsumption();
-  }
-
-  /**
    * Gets raw accessory energy for this inverter.
    * @param {string} key Accessory key.
    * @returns {number} The energy consumption for the desired acessory (in Wh).
    */
   public getRawEnergy(key: string): number {
-    return this.rawOutlets[key].getTotalEnergyConsumption();
+    return this.rawOutlets[key].getTotalEnergyConsumptionValue();
   }
 
   /**

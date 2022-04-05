@@ -171,6 +171,14 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
   }
 
   /**
+   * Gets the current power consumption value for this outlet.
+   * @returns {number} Outlet power consumption (Watt).
+   */
+  public getPowerConsumptionValue(): number {
+    return this.powerConsumption;
+  }
+
+  /**
    * Gets the current power consumpion.
    */
   public getPowerConsumption(callback: CharacteristicGetCallback): void {
@@ -194,6 +202,14 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
 
     // add new value to power series
     this.addPowerEntry(this.powerConsumption);
+  }
+
+  /**
+   * Gets the total energy consumption value for this outlet.
+   * @returns {number} Outlet total energy consumption (Wh).
+   */
+  public getTotalEnergyConsumptionValue(): number {
+    return this.totalEnergyConsumption;
   }
 
   /**
