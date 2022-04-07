@@ -27,7 +27,7 @@ export class SolaxLightSensorAccessory extends SolaxPlatformAccessory implements
   constructor(log: Logging, api: API, name: string, serial: string, model: string) {
     super(log, api, name, serial, model);
 
-    this.log.debug(`Creating light "${this.name}"`);
+    this.log.debug(`Creating light sensor "${this.name}"`);
 
     this.lightService = new this.api.hap.Service.LightSensor(name);
 
@@ -35,7 +35,7 @@ export class SolaxLightSensorAccessory extends SolaxPlatformAccessory implements
       .getCharacteristic(this.api.hap.Characteristic.CurrentAmbientLightLevel)
       .on(CharacteristicEventTypes.GET, this.getAmbientLightLevel.bind(this));
 
-    log.info(`Solax light (watts reader) ${name} created!`);
+    log.info(`Light sensor (watts reader) "${name}" created!`);
   }
 
   /**

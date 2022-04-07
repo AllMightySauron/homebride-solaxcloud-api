@@ -26,8 +26,9 @@ As HomeKit is still clueless about what a solar panel is, this plugin exposes a 
 
 Battery information is also provided as Homekit accessories in case there are any batteries installed for any of the configured inverters:
 
-- **To Battery** (Inverter power charging the battery)
-- **From Battery** (Power drawn from the battery to the inverter)
+- **To Battery** (Outlet with inverter power charging the battery)
+- **From Battery** (Outlet with power drawn from the battery to the inverter)
+- **Battery** (Battery with State of Charge information such as level or charge state)
 
 <img src="images/plugin-accessories-home.png" width="50%" height="50%">
  

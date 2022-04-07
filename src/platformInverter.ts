@@ -8,6 +8,7 @@ import { SolaxLightSensorAccessory } from './lightSensorAccessory';
 import { PlatformLightSensorMeters, PlatformOutletMeters } from './platformMeters';
 
 import { SolaxMotionAccessory } from './motionAccessory';
+import { BATTERY_CHARGING_STATE, SolaxBatteryAccessory } from './batteryAccessory';
 
 /**
  * Standard names for accessories.
@@ -87,6 +88,11 @@ export class SolaxCloudAPIPlatformInverter {
    * Virtual motion sensor triggered by data updates from Solax Cloud.
    */
   private motionUpdate!: SolaxMotionAccessory;
+
+  /**
+   * Battery information for this inverter gathered from Solax Cloud.
+   */
+  private battery!: SolaxBatteryAccessory;
 
   /**
    * Outlets with raw data gathered from Solax Cloud.
@@ -188,13 +194,15 @@ export class SolaxCloudAPIPlatformInverter {
     this.motionUpdate =
         new SolaxMotionAccessory(this.log, this.api, `${this.name} Update`, `update-${this.sn}`, inverterModel);
 
-    // create array with all base accessories
+    // create array with all valid base accessories
     this.solaxAccessories =
         [ this.rawOutlets.pv, this.rawOutlets.inverterAC, this.rawOutlets.inverterToGrid,
           this.rawOutlets.inverterToHouse, this.rawOutlets.gridToHouse, this.motionUpdate ];
 
-    if (this.batteryInstalled) {
-      this.solaxAccessories.push(this.rawOutlets.inverterFromBattery, this.rawOutlets.inverterToBattery);
+    if (this.hasBattery()) {
+      this.battery = new SolaxBatteryAccessory(this.log, this.api, `${this.name} Battery`, `bat-${this.sn}`, inverterModel);
+
+      this.solaxAccessories.push(this.battery, this.rawOutlets.inverterFromBattery, this.rawOutlets.inverterToBattery);
     }
 
     // check if "pure" Home App accessories are needed
@@ -327,8 +335,45 @@ export class SolaxCloudAPIPlatformInverter {
       this.setSmoothPower(ACCESSORY_KEYS.gridToHouse);
     }
 
+    // check for battery
+    if (this.hasBattery()) {
+      this.setBatteryLevel(SolaxCloudAPI.getBatterySoC(apiData.result));
+
+      if (this.getRawPower(ACCESSORY_KEYS.inverterToBattery) > 0) {
+        this.setBatteryChargeState(BATTERY_CHARGING_STATE.CHARGING);
+      } else if (this.getRawPower(ACCESSORY_KEYS.inverterFromBattery) > 0) {
+        this.setBatteryChargeState(BATTERY_CHARGING_STATE.NOT_CHARGING);
+      } else {
+        this.setBatteryChargeState(BATTERY_CHARGING_STATE.NOT_CHARGEABLE);
+      }
+    }
+
     // notify update with motion sensor
     this.setMotionUpdate();
+  }
+
+  /**
+   * Sets the current battery level for this inverter.
+   * @param {number} percentage Battery level to set (percentage).
+   */
+  public setBatteryLevel(percentage: number) {
+    this.battery.setLevel(percentage);
+  }
+
+  /**
+   * Sets the battery charge state for this inverter.
+   * @param {number} state The desired battery charge state.
+   */
+  public setBatteryChargeState(state: number) {
+    this.battery.setChargeState(state);
+  }
+
+  /**
+   * Gets the current battery level for this inverter.
+   * @returns {number} The current battery level (percentage).
+   */
+  public getBatteryLevel(): number {
+    return this.battery.getLevelValue();
   }
 
   /**
