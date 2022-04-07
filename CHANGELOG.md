@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.1.6] - 2022-04-07
+### Changes
+* Battery totals SoC updated to "All inverters".
+### Fixed
+* Compressed image size for README information.
+
 ## [v2.1.5] - 2022-04-07
 ### Changed
 * New inverter accessory **Battery** for State of Charge (SoC) information.
