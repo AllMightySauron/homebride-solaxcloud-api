@@ -353,19 +353,27 @@ export class SolaxCloudAPIPlatformInverter {
   }
 
   /**
-   * Sets the current battery level for this inverter.
-   * @param {number} percentage Battery level to set (percentage).
-   */
-  public setBatteryLevel(percentage: number) {
-    this.battery.setLevel(percentage);
-  }
-
-  /**
    * Sets the battery charge state for this inverter.
    * @param {number} state The desired battery charge state.
    */
   public setBatteryChargeState(state: number) {
     this.battery.setChargeState(state);
+  }
+
+  /**
+   * Gets the battery charge state for this inverter.
+   * @returns {number} Battery charge state.
+   */
+  public getBatteryChargeState(): number {
+    return this.battery.getChargeStateValue();
+  }
+
+  /**
+   * Sets the current battery level for this inverter.
+   * @param {number} percentage Battery level to set (percentage).
+   */
+  public setBatteryLevel(percentage: number) {
+    this.battery.setLevel(percentage);
   }
 
   /**

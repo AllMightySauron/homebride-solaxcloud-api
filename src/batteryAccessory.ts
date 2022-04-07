@@ -134,6 +134,14 @@ export class SolaxBatteryAccessory extends SolaxPlatformAccessory implements Acc
     this.batteryService.updateCharacteristic(this.api.hap.Characteristic.ChargingState, state);
   }
 
+  /**
+   * Gets the battery current charge state.
+   * @returns {number} The current battery charge state.
+   */
+  public getChargeStateValue(): number {
+    return this.batteryChargeState;
+  }
+
   /*
    * This method is called directly after creation of this instance.
    * It should return all services which should be added to the accessory.

@@ -148,10 +148,6 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
   private updateAllInvertersData() {
     this.allInverters.setRawPower(ACCESSORY_KEYS.pv,
       this.inverters.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.pv)).reduce((a, b) => a + b, 0));
-    this.allInverters.setRawPower(ACCESSORY_KEYS.inverterFromBattery,
-      this.inverters.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.inverterFromBattery)).reduce((a, b) => a + b, 0));
-    this.allInverters.setRawPower(ACCESSORY_KEYS.inverterToBattery,
-      this.inverters.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.inverterToBattery)).reduce((a, b) => a + b, 0));
     this.allInverters.setRawPower(ACCESSORY_KEYS.inverterAC,
       this.inverters.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.inverterAC)).reduce((a, b) => a + b, 0));
     this.allInverters.setRawEnergy(ACCESSORY_KEYS.inverterAC,
@@ -162,6 +158,23 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       this.inverters.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.inverterToHouse)).reduce((a, b) => a + b, 0));
     this.allInverters.setRawPower(ACCESSORY_KEYS.gridToHouse,
       this.inverters.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.gridToHouse)).reduce((a, b) => a + b, 0));
+
+    if (this.allInverters.hasBattery()) {
+      // get array of inverters with battery
+      const invertersWithBattery = this.inverters.filter(inverter => inverter.hasBattery());
+
+      // battery charge / discharge power
+      this.allInverters.setRawPower(ACCESSORY_KEYS.inverterFromBattery,
+        invertersWithBattery.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.inverterFromBattery)).reduce((a, b) => a + b, 0));
+      this.allInverters.setRawPower(ACCESSORY_KEYS.inverterToBattery,
+        invertersWithBattery.map(inverter => inverter.getRawPower(ACCESSORY_KEYS.inverterToBattery)).reduce((a, b) => a + b, 0));
+
+      // battery SoC
+      this.allInverters.setBatteryChargeState(Math.max(...invertersWithBattery.map(inverter => inverter.getBatteryChargeState())));
+
+      const levelSums = invertersWithBattery.map(inverter => inverter.getBatteryLevel()).reduce((a, b) => a + b, 0);
+      this.allInverters.setBatteryLevel(levelSums / invertersWithBattery.length); // average levels
+    }
 
     // notify update with motion
     this.allInverters.setMotionUpdate();
