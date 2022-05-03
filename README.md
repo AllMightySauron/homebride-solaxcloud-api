@@ -13,7 +13,7 @@
 
 The Solax Cloud Plugin for [Homebridge](https://homebridge.io/) was created as a platform plugin to gather data exposed by Solax inverters to the cloud through the [Solax Cloud API](https://www.solaxcloud.com/phoebus/resource/files/userGuide/Solax_API.pdf). 
 
-Now with **support for multiple inverters**! Sensors will be created for each of the inverters present in the configuration. Additionally, a virtual inverter named "All inverters" will be created whenever a multiple inverters configuration is present. This inverter will present summarized power and consumption figures derived from data for all the physical inverters.
+Now with support for **multiple inverters**! Sensors will be created for each of the inverters present in the configuration. Additionally, a virtual inverter named "All inverters" will be created whenever a multiple inverters configuration is present. This inverter will present summarized power and consumption figures derived from data for all the physical inverters.
 
 As HomeKit is still clueless about what a solar panel is, this plugin exposes a set of standard HomeKit accessories though Homebridge for each configured inverter that will allow interacting and automating your smart home based on the data made available from the Solax platform:
 
@@ -190,4 +190,4 @@ Next planned plugin releases should include:
 - [x] Enable support for "pure" Home App accessories (power meters will be exposed as Ambient Light sensors)
 - [x] Add "smooth" accessories for power meters (compensating for sporadic scenarios like cloud a passing)
 - [x] Support for multiple inverters
-- [ ] Accessories for battery state and consumptions (work in progress)
+- [x] Accessories for battery state and consumptions
