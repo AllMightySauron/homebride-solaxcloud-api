@@ -3,8 +3,6 @@ import { AccessoryPlugin, API, StaticPlatformPlugin, Logging, PlatformConfig, AP
 import { Util } from './util';
 import { SolaxCloudAPIPlatformInverter, ACCESSORY_KEYS } from './platformInverter';
 
-import util from 'util';
-
 /**
  * Valid smoothing methods (Simple Moving Average, Exponential Moving Average).
  */
@@ -130,8 +128,6 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
     });
   }
 
-  sleep = util.promisify(setTimeout);
-
   /**
    * Check whether object implements interface InverterConfig.
    * @param obj Any object.
@@ -181,22 +177,34 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
   }
 
   /**
+   * Sleeps for a number of milliseconds.
+   * @param millis {number} The number of milliseconds to sleep.
+   */
+  private async sleep(millis: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, millis));
+  }
+
+  /**
    * Periodically retrieves inverter data from Solax Cloud API using configured tokenID and SN.
    */
   private async fetchDataPeriodically(): Promise<void> {
-    // loop over inverters and update its data
-    this.inverters.forEach(inverter => inverter.updateInverterDataFromCloud());
+    // loop forever
+    for (;;) {
+      // update data for all configured inverters
+      this.inverters.forEach(inverter => inverter.updateInverterDataFromCloud());
 
-    this.log.info(`Updated data from Solax Cloud API, sleeping for ${this.config.pollingFrequency} seconds.`);
+      this.log.info(`Updated data from Solax Cloud API, sleeping for ${this.config.pollingFrequency} seconds.`);
 
-    // update inverter totalizers if needed
-    if (this.inverters.length > 1) {
-      this.log.info ('Computing inverter totals...');
+      // update inverter totalizers if needed
+      if (this.inverters.length > 1) {
+        this.log.info ('Computing inverter totals...');
 
-      this.updateAllInvertersData();
+        this.updateAllInvertersData();
+      }
+
+      // sleep until next data poll
+      await this.sleep(this.config.pollingFrequency * 1000);
     }
-
-    this.sleep(this.config.pollingFrequency * 1000).then(async () => await this.fetchDataPeriodically());
   }
 
   /**

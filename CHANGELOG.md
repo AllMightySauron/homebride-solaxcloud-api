@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.1.8] - 2022-07-20
+### Changes
+* Bumped dependencies.
+### Fixed
+* Update on polling logic to prevent event memory leak issue ([#04](https://github.com/AllMightySauron/homebride-solaxcloud-api/issues/4)).
+
 ## [v2.1.7] - 2022-05-03
 ### Changes
 * Bumped dependencies.
