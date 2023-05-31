@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.1.12] - 2023-05-31
+### Changes
+* Bumped dependencies.
+
 ## [v2.1.11] - 2023-03-14
 ### Changes
 * Bumped dependencies.
