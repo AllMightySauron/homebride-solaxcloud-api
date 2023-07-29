@@ -2,15 +2,26 @@
   "pluginAlias": "SolaxCloudAPI",
   "pluginType": "platform",
   "singular": false,
-  "headerDisplay": "This Homebridge plugin uses Solax API service to obtain real-time info of your inverters.",
+  "headerDisplay": "This Homebridge plugin uses Solax/QCells API cloud service to obtain real-time info of your inverters.",
   "schema": {
     "type": "object",
     "properties": {
+      "brand": {
+        "title": "Inverter Brand",
+        "type": "integer",
+        "required": true,
+        "default": 0,
+        "oneOf": [
+          { "title": "Solax", "enum": [ 0 ] },
+          { "title": "QCells", "enum": [ 1 ] }
+        ],
+        "description": "Brand for list of inverters below (API data fetch URL is brand dependent)."
+      },
       "tokenId": {
-        "title": "TokenID from Solax",
+        "title": "TokenID",
         "type": "string",
         "required": true,
-        "description": "Users get information from Solax Cloud through the granted tokenID. Please obtain your tokenID on the API page of Solax Cloud.",
+        "description": "Users get information from the cloud API through the granted tokenID. Please obtain your tokenID on the API page of Solax/QCells cloud.",
         "default": "20200722185111234567890",
         "minLength": 23,
         "maxLength": 23
@@ -60,14 +71,14 @@
             { "title": "600 (10 minutes)", "enum": [ 600 ] },
             { "title": "900 (15 minutes)", "enum": [ 900 ] }
           ],
-          "description": "Plugin data polling frequency from Solax Cloud (in seconds)."
+          "description": "Plugin data polling frequency from the cloud (in seconds)."
       },
       "smoothMeters": {
         "title": "Add accessories for smooth meters?",
         "type": "boolean",
         "required": false,
         "default": true,
-        "description": "Enable this option to create accessories for smoothing raw values read from Solax Cloud."
+        "description": "Enable this option to create accessories for smoothing raw values read from the cloud."
       },
       "smoothingMethod": {
         "title": "Smoothing method",
@@ -82,7 +93,7 @@
           "functionBody": "return model.smoothMeters === true;"
         },
         "description": "Statistical method for smoothing power consumption data."
-    },
+      },
       "pureHomeApp": {
           "title": "Add \"pure\" Home app accessories?",
           "type": "boolean",

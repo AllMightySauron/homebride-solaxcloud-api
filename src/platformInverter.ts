@@ -11,6 +11,14 @@ import { SolaxMotionAccessory } from './motionAccessory';
 import { BATTERY_CHARGING_STATE, SolaxBatteryAccessory } from './batteryAccessory';
 
 /**
+ * Inverter brand.
+ */
+export const INVERTER_BRAND = {
+  SOLAX: 0,
+  QCELLS: 1,
+};
+
+/**
  * Standard names for accessories.
  */
 export const ACCESSORY_KEYS = {
@@ -132,7 +140,8 @@ export class SolaxCloudAPIPlatformInverter {
     * @returns
     */
   constructor (log: Logging, config: PlatformConfig, api: API,
-    tokenId: string, sn: string, name: string, hasBattery: boolean,
+    brand: number, tokenId: string, sn: string,
+    name: string, hasBattery: boolean,
     smoothingWindow: number) {
     // store values in properties
     this.log = log;
@@ -149,7 +158,7 @@ export class SolaxCloudAPIPlatformInverter {
     this.log.info(`Initialing acessories for inverter "${name}" (SN="${sn}")...`);
 
     // init new Solax Cloud API object with give tokenID and sn
-    this.solaxCloudAPI = new SolaxCloudAPI(tokenId, sn);
+    this.solaxCloudAPI = new SolaxCloudAPI(brand, tokenId, sn);
 
     // initial data set
     const apiData = this.solaxCloudAPI.getAPIData();

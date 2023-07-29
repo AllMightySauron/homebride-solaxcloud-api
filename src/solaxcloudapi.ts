@@ -58,9 +58,23 @@ export interface SolaxCloudAPIResponse {
     result: SolaxCloudAPIResult;
     /** Whether the data request was successful */
     success: boolean;
-  }
+}
 
-const SOLAX_CLOUD_URL = 'https://www.solaxcloud.com:9443/proxy/api/getRealtimeInfo.do';
+/**
+ * Brand for cloud data fetching.
+ */
+export const BRAND = {
+  SOLAX: 0,
+  QCELLS: 1,
+};
+
+/**
+ * Cloud API URL for data fetching.
+ */
+const CLOUD_URL = {
+  SOLAX: 'https://www.solaxcloud.com:9443/proxy/api/getRealtimeInfo.do',
+  QCELLS: 'https://www.portal-q-cells.us/proxyApp/proxy/api/getRealtimeInfo.do',
+};
 
 /**
  * Main class to retrieve data from Solax API.
@@ -69,12 +83,26 @@ export class SolaxCloudAPI {
 
   /**
      * Class constructor.
-     * @param tokenId Token ID to gather data from Solax Cloud API.
-     * @param sn Unique identifier of inverter (Serial No).
+     * @param {number} brand Brand type.
+     * @param {string} tokenId Token ID to gather data from Solax Cloud API.
+     * @param {string} sn Unique identifier of inverter (Serial No).
      */
-  constructor (public readonly tokenId: string, public readonly sn: string) {
+  constructor (public readonly brand: number, public readonly tokenId: string, public readonly sn: string) {
+    this.brand = brand;
     this.tokenId = tokenId;
     this.sn = sn;
+  }
+
+  /**
+   * Gets the cloud API URL depending on the inverter brand.
+   * @returns Cloud API URL.
+   */
+  private getCloudURL(): string {
+    if (this.brand === BRAND.QCELLS) {
+      return CLOUD_URL.QCELLS;
+    } else {
+      return CLOUD_URL.SOLAX;
+    }
   }
 
   /**
@@ -251,7 +279,7 @@ export class SolaxCloudAPI {
    */
   public getAPIData(): SolaxCloudAPIResponse {
     try {
-      const response = fetch(SOLAX_CLOUD_URL + '?tokenId=' + this.tokenId + '&sn=' + this.sn);
+      const response = fetch(this.getCloudURL() + '?tokenId=' + this.tokenId + '&sn=' + this.sn);
 
       if (!response.ok) {
         throw new Error(`unexpected response ${response.statusText}`);

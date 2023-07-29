@@ -1,7 +1,7 @@
 import { AccessoryPlugin, API, StaticPlatformPlugin, Logging, PlatformConfig, APIEvent } from 'homebridge';
 
 import { Util } from './util';
-import { SolaxCloudAPIPlatformInverter, ACCESSORY_KEYS } from './platformInverter';
+import { SolaxCloudAPIPlatformInverter, INVERTER_BRAND, ACCESSORY_KEYS } from './platformInverter';
 
 /**
  * Valid smoothing methods (Simple Moving Average, Exponential Moving Average).
@@ -99,7 +99,7 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
         // setup new inverter
         const platformInverter: SolaxCloudAPIPlatformInverter =
           new SolaxCloudAPIPlatformInverter(log, config, api,
-            this.config.tokenId, inverter.sn, inverter.name, inverter.hasBattery,
+            this.config.brand, this.config.tokenId, inverter.sn, inverter.name, inverter.hasBattery,
             this.smoothingWindow);
 
         // add new inverter to list
@@ -109,7 +109,7 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       // create inverter totalizers
       if (this.inverters.length > 1) {
         this.allInverters = new SolaxCloudAPIPlatformInverter(log, config, api,
-          this.config.tokenId, 'total', 'All inverters',
+          this.config.brand, this.config.tokenId, 'total', 'All inverters',
           this.inverters.map(inverter => + inverter.hasBattery()).reduce((a, b) => a + b, 0) > 0,
           this.smoothingWindow);
       }
@@ -248,6 +248,17 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       result = false;
 
       return result;
+    }
+
+    // check for inverter brand
+    if (!config.brand) {
+      this.log.warn('Config check: Can\'t find parameter "brand" in config file (old format?), defaulting to Solax!');
+      config.brand = INVERTER_BRAND.SOLAX;
+    } else {
+      if (config.brand !== INVERTER_BRAND.SOLAX && config.brand !== INVERTER_BRAND.QCELLS) {
+        this.log.warn('Config check: Invalid parameter "brand" in config file (old format?), defaulting to Solax!');
+        config.brand = INVERTER_BRAND.SOLAX;
+      }
     }
 
     // check for inverters type
