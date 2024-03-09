@@ -63,7 +63,7 @@ export interface SolaxCloudAPIResponse {
 /**
  * Brand for cloud data fetching.
  */
-export const BRAND = {
+export const INVERTER_BRAND = {
   SOLAX: 0,
   QCELLS: 1,
 };
@@ -83,7 +83,7 @@ export class SolaxCloudAPI {
 
   /**
      * Class constructor.
-     * @param {number} brand Brand type.
+     * @param {number} brand Inverter brand type.
      * @param {string} tokenId Token ID to gather data from Solax Cloud API.
      * @param {string} sn Unique identifier of inverter (Serial No).
      */
@@ -98,7 +98,7 @@ export class SolaxCloudAPI {
    * @returns Cloud API URL.
    */
   private getCloudURL(): string {
-    if (this.brand === BRAND.QCELLS) {
+    if (this.brand === INVERTER_BRAND.QCELLS) {
       return CLOUD_URL.QCELLS;
     } else {
       return CLOUD_URL.SOLAX;

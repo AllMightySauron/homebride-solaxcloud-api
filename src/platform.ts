@@ -1,7 +1,12 @@
 import { AccessoryPlugin, API, StaticPlatformPlugin, Logging, PlatformConfig, APIEvent } from 'homebridge';
 
 import { Util } from './util';
-import { SolaxCloudAPIPlatformInverter, INVERTER_BRAND, ACCESSORY_KEYS } from './platformInverter';
+import { SolaxCloudAPIPlatformInverter, ACCESSORY_KEYS } from './platformInverter';
+
+/**
+ * Valid inverter brands (Solax, QCells)
+ */
+const VALID_INVERTER_BRANDS = ['solax', 'qcells'];
 
 /**
  * Valid smoothing methods (Simple Moving Average, Exponential Moving Average).
@@ -9,12 +14,17 @@ import { SolaxCloudAPIPlatformInverter, INVERTER_BRAND, ACCESSORY_KEYS } from '.
 const VALID_SMOOTHING_METHODS = [ 'sma', 'ema' ];
 
 /**
+ * Default inverter brand (Solax).
+ */
+const DEFAULT_INVERTER_BRAND = 'solax';
+
+/**
  * Default smoothing method (simple moving average).
  */
 const DEFAULT_SMOOTHING_METHOD = 'sma';
 
 /**
- * Default polling frequency from Solax Cloud (in seconds).
+ * Default polling frequency from Solax or QCells Cloud (in seconds).
  */
 const DEFAULT_POLLING_FREQUENCY = 300;
 
@@ -99,8 +109,8 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
         // setup new inverter
         const platformInverter: SolaxCloudAPIPlatformInverter =
           new SolaxCloudAPIPlatformInverter(log, config, api,
-            this.config.brand, this.config.tokenId, inverter.sn, inverter.name, inverter.hasBattery,
-            this.smoothingWindow);
+            VALID_INVERTER_BRANDS.indexOf(this.config.brand), this.config.tokenId, inverter.sn, inverter.name,
+            inverter.hasBattery, this.smoothingWindow);
 
         // add new inverter to list
         this.inverters.push(platformInverter);
@@ -109,7 +119,7 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       // create inverter totalizers
       if (this.inverters.length > 1) {
         this.allInverters = new SolaxCloudAPIPlatformInverter(log, config, api,
-          this.config.brand, this.config.tokenId, 'total', 'All inverters',
+          VALID_INVERTER_BRANDS.indexOf(this.config.brand), this.config.tokenId, 'total', 'All inverters',
           this.inverters.map(inverter => + inverter.hasBattery()).reduce((a, b) => a + b, 0) > 0,
           this.smoothingWindow);
       }
@@ -193,7 +203,7 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       // update data for all configured inverters
       this.inverters.forEach(inverter => inverter.updateInverterDataFromCloud());
 
-      this.log.info(`Updated data from Solax Cloud API, sleeping for ${this.config.pollingFrequency} seconds.`);
+      this.log.info(`Updated data from ${this.config.brand} Cloud API, sleeping for ${this.config.pollingFrequency} seconds.`);
 
       // update inverter totalizers if needed
       if (this.inverters.length > 1) {
@@ -252,12 +262,12 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
 
     // check for inverter brand
     if (!config.brand) {
-      this.log.warn('Config check: Can\'t find parameter "brand" in config file (old format?), defaulting to Solax!');
-      config.brand = INVERTER_BRAND.SOLAX;
+      this.log.warn('Config check: Can\'t find parameter "brand" in config file, defaulting to Solax!');
+      config.brand = DEFAULT_INVERTER_BRAND;
     } else {
-      if (config.brand !== INVERTER_BRAND.SOLAX && config.brand !== INVERTER_BRAND.QCELLS) {
-        this.log.warn('Config check: Invalid parameter "brand" in config file (old format?), defaulting to Solax!');
-        config.brand = INVERTER_BRAND.SOLAX;
+      if (!VALID_INVERTER_BRANDS.includes(config.brand)) {
+        this.log.warn('Config check: Invalid value for parameter "brand" in config file, defaulting to Solax!');
+        config.brand = DEFAULT_INVERTER_BRAND;
       }
     }
 

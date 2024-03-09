@@ -68,6 +68,11 @@ export class SolaxCloudAPIPlatformInverter {
   private readonly api: API;
 
   /**
+   * Inverter brand.
+   */
+  private brand: number;
+
+  /**
    * Inverter name.
    */
   private name: string;
@@ -149,13 +154,15 @@ export class SolaxCloudAPIPlatformInverter {
     this.api = api;
 
     // setup inverter data
+    this.brand = brand;
     this.sn = sn.toLowerCase();
     this.name = name;
 
     this.smoothingWindow = smoothingWindow;
     this.batteryInstalled = hasBattery;
 
-    this.log.info(`Initialing acessories for inverter "${name}" (SN="${sn}")...`);
+    this.log.info(
+      `Initialing acessories for inverter "${name}" (SN="${sn}") from ${SolaxCloudAPIPlatformInverter.getInverterBrandName(brand)}...`);
 
     // init new Solax Cloud API object with give tokenID and sn
     this.solaxCloudAPI = new SolaxCloudAPI(brand, tokenId, sn);
@@ -170,7 +177,8 @@ export class SolaxCloudAPIPlatformInverter {
     if (apiData.success) {
       inverterModel = SolaxCloudAPI.getInverterType(apiData.result.inverterType);
     } else {
-      this.log.info('Could not retrieve initial values from Solax Cloud, accessory Serial Number and Model properties deferred...');
+      this.log.info(`Could not retrieve initial values from ${SolaxCloudAPIPlatformInverter.getInverterBrandName(brand)} ` +
+                    'Cloud, accessory Serial Number and Model properties deferred...');
       inverterModel = 'Unknown';
     }
 
@@ -319,6 +327,20 @@ export class SolaxCloudAPIPlatformInverter {
   }
 
   /**
+   * Gets the inverter brand name.
+   * @param {number} brand Inverter brand type.
+   * @returns Inverter brand name.
+   */
+  public static getInverterBrandName(brand: number): string {
+    switch(brand) {
+      case INVERTER_BRAND.QCELLS:
+        return 'QCells';
+      default:
+        return 'Solax';
+    }
+  }
+
+  /**
     * Update all platform accessory status based on the values read from the API.
     * @param {SolaxCloudAPIResponse} apiData API data from Solax Cloud.
     */
@@ -459,7 +481,8 @@ export class SolaxCloudAPIPlatformInverter {
    */
   public updateInverterDataFromCloud() {
     try {
-      this.log.info(`Retrieving data from Solax Cloud API for inverter "${this.name}" (SN="${this.sn}")`);
+      this.log.info(`Retrieving data from ${SolaxCloudAPIPlatformInverter.getInverterBrandName(this.brand)} ` +
+                    `Cloud API for inverter "${this.name}" (SN="${this.sn}")`);
 
       const apiData = this.solaxCloudAPI.getAPIData();
 
@@ -471,7 +494,8 @@ export class SolaxCloudAPIPlatformInverter {
         throw new Error(apiData.exception);
       }
     } catch (error) {
-      this.log.error(`Failed to read from Solax Cloud API for inverter "${this.name}" (SN="${this.sn})". Error: ${error}`);
+      this.log.error(`Failed to read from ${SolaxCloudAPIPlatformInverter.getInverterBrandName(this.brand)} `+
+                     `Cloud API for inverter "${this.name}" (SN="${this.sn})". Error: ${error}`);
     }
   }
 

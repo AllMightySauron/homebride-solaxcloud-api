@@ -8,12 +8,12 @@
     "properties": {
       "brand": {
         "title": "Inverter Brand",
-        "type": "integer",
-        "required": true,
-        "default": 0,
+        "type": "string",
+        "required": false,
+        "default": "solax",
         "oneOf": [
-          { "title": "Solax", "enum": [ 0 ] },
-          { "title": "QCells", "enum": [ 1 ] }
+          { "title": "Solax", "enum": [ "solax" ] },
+          { "title": "QCells", "enum": [ "qcells" ] }
         ],
         "description": "Brand for list of inverters below (API data fetch URL is brand dependent)."
       },
