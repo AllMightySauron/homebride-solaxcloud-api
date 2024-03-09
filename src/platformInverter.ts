@@ -139,8 +139,11 @@ export class SolaxCloudAPIPlatformInverter {
     * @param log
     * @param config
     * @param api
+    * @param brand
     * @param tokenId
-    * @param inverterSN
+    * @param sn
+    * @param name
+    * @param hasBattery
     * @param smoothingWindow
     * @returns
     */

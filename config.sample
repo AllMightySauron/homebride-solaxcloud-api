@@ -2,9 +2,10 @@
   "platforms": [
     {
       "platform": "SolaxCloudAPI",
-      "tokenId": "20200722185111234567890",
       inverters: [
         {
+          "brand": "solax",
+          "tokenId": "20200722185111234567890",
           "name": "My Solax",
           "sn": "ABCDEFGHIJ"
         }

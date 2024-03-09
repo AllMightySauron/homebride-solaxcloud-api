@@ -14,11 +14,6 @@ const VALID_INVERTER_BRANDS = ['solax', 'qcells'];
 const VALID_SMOOTHING_METHODS = [ 'sma', 'ema' ];
 
 /**
- * Default inverter brand (Solax).
- */
-const DEFAULT_INVERTER_BRAND = 'solax';
-
-/**
  * Default smoothing method (simple moving average).
  */
 const DEFAULT_SMOOTHING_METHOD = 'sma';
@@ -47,6 +42,8 @@ const MAX_POLLING_FREQUENCY = Math.max(60 / MAX_POLLS_MIN, (24 * 60 * 60) / MAX_
  * Type definition for inverter in configuration file.
  */
 interface InverterConfig {
+  brand: string;
+  tokenId: string;
   name: string;
   sn: string;
 }
@@ -109,17 +106,17 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
         // setup new inverter
         const platformInverter: SolaxCloudAPIPlatformInverter =
           new SolaxCloudAPIPlatformInverter(log, config, api,
-            VALID_INVERTER_BRANDS.indexOf(this.config.brand), this.config.tokenId, inverter.sn, inverter.name,
+            VALID_INVERTER_BRANDS.indexOf(inverter.brand), inverter.tokenId, inverter.sn, inverter.name,
             inverter.hasBattery, this.smoothingWindow);
 
         // add new inverter to list
         this.inverters.push(platformInverter);
       });
 
-      // create inverter totalizers
+      // create inverter totalizers (pick first inverter as brand)
       if (this.inverters.length > 1) {
         this.allInverters = new SolaxCloudAPIPlatformInverter(log, config, api,
-          VALID_INVERTER_BRANDS.indexOf(this.config.brand), this.config.tokenId, 'total', 'All inverters',
+          VALID_INVERTER_BRANDS.indexOf(this.config.inverters[0].brand), this.config.tokenId, 'total', 'All inverters',
           this.inverters.map(inverter => + inverter.hasBattery()).reduce((a, b) => a + b, 0) > 0,
           this.smoothingWindow);
       }
@@ -139,13 +136,13 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
   }
 
   /**
-   * Check whether object implements interface InverterConfig.
+   * Check whether object implements interface InverterConfig and brand has a valid entry.
    * @param obj Any object.
    * @returns Whether object implements interface InverterConfig.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static isInverterConfig(obj: any): obj is InverterConfig {
-    return 'name' in obj && 'sn' in obj;
+    return 'name' in obj && 'sn' in obj && 'brand' in obj && 'tokenId' in obj && VALID_INVERTER_BRANDS.includes(obj.brand);
   }
 
   /**
@@ -226,49 +223,12 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
 
     this.log.debug(`Config read: ${JSON.stringify(config)}`);
 
-    // check for configuration conversion to new format if needed
-    if (!config.inverters) {
-      // check for "old" configuration settings
-      if (config.name && config.sn) {
-        this.log.info('Converting config file to new format (with multiple inverters support)...');
-
-        // setup new configuration settings (supporting multiple inverters) with single entry
-        config.inverters = [
-          {
-            name: config.name,
-            sn: config.sn,
-          },
-        ];
-
-        // delete old configuration settings
-        delete config.name;
-        delete config.sn;
-      }
-    }
-
     // check for mandatory parameters
-    if (!config.tokenId) {
-      this.log.error('Config check: Can\'t find mandatory parameter "tokenId" parameter in config file, aborting!');
-      result = false;
-
-      return result;
-    }
     if (!config.inverters) {
       this.log.error('Config check: Can\'t find mandatory parameter "inverters" parameter in config file, aborting!');
       result = false;
 
       return result;
-    }
-
-    // check for inverter brand
-    if (!config.brand) {
-      this.log.warn('Config check: Can\'t find parameter "brand" in config file, defaulting to Solax!');
-      config.brand = DEFAULT_INVERTER_BRAND;
-    } else {
-      if (!VALID_INVERTER_BRANDS.includes(config.brand)) {
-        this.log.warn('Config check: Invalid value for parameter "brand" in config file, defaulting to Solax!');
-        config.brand = DEFAULT_INVERTER_BRAND;
-      }
     }
 
     // check for inverters type

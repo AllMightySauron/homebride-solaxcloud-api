@@ -6,26 +6,6 @@
   "schema": {
     "type": "object",
     "properties": {
-      "brand": {
-        "title": "Inverter Brand",
-        "type": "string",
-        "required": false,
-        "default": "solax",
-        "oneOf": [
-          { "title": "Solax", "enum": [ "solax" ] },
-          { "title": "QCells", "enum": [ "qcells" ] }
-        ],
-        "description": "Brand for list of inverters below (API data fetch URL is brand dependent)."
-      },
-      "tokenId": {
-        "title": "TokenID",
-        "type": "string",
-        "required": true,
-        "description": "Users get information from the cloud API through the granted tokenID. Please obtain your tokenID on the API page of Solax/QCells cloud.",
-        "default": "20200722185111234567890",
-        "minLength": 23,
-        "maxLength": 23
-      },
       "inverters": {
         "title": "Inverters",
         "type": "array",
@@ -33,6 +13,26 @@
           "title": "Inverter",
           "type": "object",
           "properties": {
+            "brand": {
+              "title": "Inverter Brand",
+              "type": "string",
+              "required": true,
+              "default": "solax",
+              "oneOf": [
+                { "title": "Solax", "enum": [ "solax" ] },
+                { "title": "QCells", "enum": [ "qcells" ] }
+              ],
+              "description": "Brand for list of inverters below (API data fetch URL is brand dependent)."
+            },
+            "tokenId": {
+              "title": "TokenID",
+              "type": "string",
+              "required": true,
+              "description": "Users get information from the cloud API through the granted tokenID. Please obtain your tokenID on the API page of Solax/QCells cloud.",
+              "default": "20200722185111234567890",
+              "minLength": 23,
+              "maxLength": 23
+            },
             "name": {
               "title": "Inverter name (unique)",
               "type": "string",
