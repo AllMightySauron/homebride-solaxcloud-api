@@ -11,7 +11,7 @@
 ![npm](https://badgen.net/npm/v/homebridge-solaxcloud-api) ![npm](https://badgen.net/npm/dt/homebridge-solaxcloud-api) [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 
 
-The Solax Cloud Plugin for [Homebridge](https://homebridge.io/) was created as a platform plugin to gather data exposed by Solax inverters to the cloud through the [Solax Cloud API](https://www.solaxcloud.com/phoebus/resource/files/userGuide/Solax_API.pdf). 
+The Solax Cloud Plugin for [Homebridge](https://homebridge.io/) was created as a platform plugin to gather data exposed by **Solax inverters** to the cloud through the [Solax Cloud API](https://www.solaxcloud.com/phoebus/resource/files/userGuide/Solax_API.pdf). Please note that **QCells inverters** all also supported cloud requests sharea a similar approach.
 
 Now with support for **multiple inverters**! Sensors will be created for each of the inverters present in the configuration. Additionally, a virtual inverter named "All inverters" will be created whenever a multiple inverters configuration is present. This inverter will present summarized power and consumption figures derived from data for all the physical inverters.
 
@@ -36,9 +36,9 @@ Please note that additional accessories are created by default with smooth power
 
 ## Required information
 
-For this plugin to work, two critical pieces of information are required from Solax Cloud: 
+For this plugin to work, two critical pieces of information are required from Solax/QCells Cloud: 
 
-- **Token ID**: Solax users can get inverter information through the granted tokenID. You need to obtain your tokenID on the API page of Solaxcloud.
+- **Token ID**: Solax/Qcells users can get inverter information through the granted tokenID. You need to obtain your tokenID on the API page of Solax/Qcells cloud.
 - **SN**: Registration No (communication module SN) for each desired inverter.
 
 ## Installation
@@ -59,9 +59,10 @@ Minimal platform configuration is depicted by the example configuration file bel
   "platforms": [
     {
       "platform": "SolaxCloudAPI",
-      "tokenId": "20200722185111234567890",
       "inverters": [
         {
+          "brand": "solax",
+          "tokenId": "20200722185111234567890",
           "name": "Solax",
           "sn": "ABCDEFGHIJ"
         }
@@ -72,17 +73,16 @@ Minimal platform configuration is depicted by the example configuration file bel
 ```
 Configuration parameters are described on the table below:
 
-| **Parameter**      | **Type** |  **Description**                                                                                                                |  **Default**  | **Mandatory?** |
-| ------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------:| :------------: |
-| `platform`         |  string  |  Platform name (must be SolaxCloudAPI)                                                                                          |     -         |       Y        |
-| `tokenId`          |  string  |  Users get information from Solax Cloud through the granted tokenID. Please obtain your tokenID on the API page of Solax Cloud  |     -         |       Y        |
-| `inverters`        |  array   |  Array of configured inverters as objects with `{ name: string, sn: string }`, where `name` is the inverter name, used as prefix for accessory naming and `sn` is the inverter registration no. (inverter module SN). |     -         |       Y        |
-| `pollingFrequency` |  number  |  Plugin data polling frequency from Solax Cloud (in seconds)                                                                    |     300       |       N        |
-| `smoothingMeters`  |  boolean |  Whether to create additional meters by smoothing raw values from Solax Cloud                                                   |     true      |       N        |
-| `smoothingMethod`  |  string  |  Statistical method to use for smoothing raw values from Solax Cloud (simple or exponential moving average - "sma" or "ema")    |     "sma"     |       N        |
-| `pureHomeApp`      |  boolean |  Whether to create meters as standard accessories that can be used on the Home App (power will show as ambient light sensors)   |     false     |       N        |
+| **Parameter**      | **Type** |  **Description**                                                                                                                                                                                                            |  **Default**  | **Mandatory?** |
+| ------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------:| :------------: |
+| `platform`         |  string  |  Platform name (must be SolaxCloudAPI)                                                                                                                                                                                      |     -         |       Y        |
+| `inverters`        |  array   |  Array of configured inverters as objects with `{ brand: string, tokenId: string, name: string, sn: string, hasBattery: boolean }`, where `brand` is "solax" or "qcells", `tokenID` is the access token retrieved from the API page of Solax/QCells Cloud, `name` is the inverter name, used as prefix for accessory naming, `sn` is the inverter registration no. (inverter module SN) and `hasBattery` indicates on whether this inverter is connected to a battery. |     -         |       Y        |
+| `pollingFrequency` |  number  |  Plugin data polling frequency from Solax Cloud (in seconds)                                                                                                                                                                |     300       |       N        |
+| `smoothingMeters`  |  boolean |  Whether to create additional meters by smoothing raw values from Solax Cloud                                                                                                                                               |     true      |       N        |
+| `smoothingMethod`  |  string  |  Statistical method to use for smoothing raw values from Solax Cloud (simple or exponential moving average - "sma" or "ema")                                                                                                |     "sma"     |       N        |
+| `pureHomeApp`      |  boolean |  Whether to create meters as standard accessories that can be used on the Home App (power will show as ambient light sensors)                                                                                               |     false     |       N        |
 
-**NOTE:** The `pollingFrequency` parameter defaults to 300 seconds, since Solax inverters update cloud data every 5 minutes.
+**NOTE:** The `pollingFrequency` parameter defaults to 300 seconds, since Solax/QCells inverters update cloud data every 5 minutes.
 
 Configuration through the the use of [Homebridge UI](https://github.com/oznu/homebridge-config-ui-x) plugin is also available and recommended:
 
@@ -190,4 +190,5 @@ Next planned plugin releases should include:
 - [x] Enable support for "pure" Home App accessories (power meters will be exposed as Ambient Light sensors)
 - [x] Add "smooth" accessories for power meters (compensating for sporadic scenarios like cloud a passing)
 - [x] Support for multiple inverters
+- [x] Support for multiple brands (between Solax and QCells)
 - [x] Accessories for battery state and consumptions
