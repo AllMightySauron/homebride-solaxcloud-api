@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.3.0] - 2024-03-14
+### Changes
+* Added support for inverters from QCells through the QCells cloud API.
+* **Breaking change** - plug-in configuration must be re-done to support inverters from multiple brands.
+* Bumped dependencies.
+
 ## [v2.1.12] - 2023-05-31
 ### Changes
 * Bumped dependencies.
