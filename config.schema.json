@@ -31,7 +31,7 @@
               "description": "Users get information from the cloud API through the granted tokenID. Please obtain your tokenID on the API page of Solax/QCells cloud.",
               "default": "20200722185111234567890",
               "minLength": 23,
-              "maxLength": 23
+              "maxLength": 24
             },
             "name": {
               "title": "Inverter name (unique)",

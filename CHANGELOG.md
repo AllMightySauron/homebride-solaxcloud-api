@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.3.1] - 2024-04-08
+### Fixed
+* Changed max TokenID size to 24 ([#08](https://github.com/AllMightySauron/homebride-solaxcloud-api/issues/8)).
+
 ## [v2.3.0] - 2024-03-14
 ### Changes
 * Added support for inverters from QCells through the QCells cloud API.
