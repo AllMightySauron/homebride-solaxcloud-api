@@ -1,8 +1,9 @@
 
 <table cellspacing="0" cellpadding="0">
   <tr>
-    <td align="center"><img src="https://github.com/homebridge/branding/raw/master/logos/homebridge-wordmark-logo-vertical.png" width="150"></td>
-    <td align="center"><img src="https://www.solaxpower.com/wp-content/uploads/2020/03/weblogo5.png" width="300"></td>
+    <td align="center"><img src="images/logos/homebridge-wordmark-logo-horizontal.png" width="200"></td>
+    <td align="center"><img src="images/logos/solax-power.png" width="150"></td>
+    <td align="center"><img src="images/logos/qcells.png" width="150"></td>
   <tr>
 </table>
 
@@ -11,7 +12,7 @@
 ![npm](https://badgen.net/npm/v/homebridge-solaxcloud-api) ![npm](https://badgen.net/npm/dt/homebridge-solaxcloud-api) [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
 
 
-The Solax Cloud Plugin for [Homebridge](https://homebridge.io/) was created as a platform plugin to gather data exposed by **Solax inverters** to the cloud through the [Solax Cloud API](https://www.solaxcloud.com/phoebus/resource/files/userGuide/Solax_API.pdf). Please note that **QCells inverters** all also supported cloud requests sharea a similar approach.
+The Solax Cloud Plugin for [Homebridge](https://homebridge.io/) was created as a platform plugin to gather data exposed by **Solax inverters** to the cloud through the [Solax Cloud API](https://www.solaxcloud.com/phoebus/resource/files/userGuide/Solax_API.pdf). Please note that **QCells inverters** are also supported since cloud requests share a similar approach.
 
 Now with support for **multiple inverters**! Sensors will be created for each of the inverters present in the configuration. Additionally, a virtual inverter named "All inverters" will be created whenever a multiple inverters configuration is present. This inverter will present summarized power and consumption figures derived from data for all the physical inverters.
 

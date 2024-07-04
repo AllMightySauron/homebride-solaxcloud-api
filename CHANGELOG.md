@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.3.2] - 2024-07-04
+### Fixed
+* Updated README with fixed image logos.
+### Changes
+* Bumped dependencies.
+
 ## [v2.3.1] - 2024-04-08
 ### Fixed
 * Changed max TokenID size to 24 ([#08](https://github.com/AllMightySauron/homebride-solaxcloud-api/issues/8)).
