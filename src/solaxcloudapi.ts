@@ -72,7 +72,7 @@ export const INVERTER_BRAND = {
  * Cloud API URL for data fetching.
  */
 const CLOUD_URL = {
-  SOLAX: 'https://www.solaxcloud.com:9443/proxy/api/getRealtimeInfo.do',
+  SOLAX: 'https://www.solaxcloud.com/proxyApp/proxy/api/getRealtimeInfo.do',
   QCELLS: 'https://www.portal-q-cells.us/proxyApp/proxy/api/getRealtimeInfo.do',
 };
 
