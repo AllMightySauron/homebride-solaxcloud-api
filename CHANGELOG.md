@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.3.3] - 2024-08-02
+### Fixed
+* Updated URL for Solax cloud API fetches.
+
 ## [v2.3.2] - 2024-07-04
 ### Fixed
 * Updated README with fixed image logos.
