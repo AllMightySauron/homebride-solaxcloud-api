@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.4.2] - 2026-06-03
+### Changed
+* Bumped Homebridge Lib dependency.
+### Fixed
+* Updated Eve HomeKit type loading for Homebridge Lib v8.
+
 ## [v2.4.1] - 2026-06-03
 ### Added
 * Added unit coverage for all accessory types, platform config validation, and totalizer inverter creation.

@@ -1,12 +1,28 @@
-import { Service, AccessoryPlugin, Logging, CharacteristicGetCallback, API } from 'homebridge';
+import { Service, AccessoryPlugin, Logging, Characteristic, CharacteristicGetCallback, API } from 'homebridge';
 
 import { SolaxPlatformAccessory } from './platformAccessory';
 
 import { Statistics } from './statistics';
 
-import { EveHomeKitTypes } from 'homebridge-lib';
 import fakegato from 'fakegato-history';
 import { FakeGatoHistoryService } from 'fakegato-history';
+
+type EveCharacteristic = (new () => Characteristic) & { UUID: string };
+
+interface EveHomeKitTypes {
+  Characteristics: {
+    CurrentConsumption: EveCharacteristic;
+    TotalConsumption: EveCharacteristic;
+  };
+  Services: {
+    Outlet: new (name: string) => Service;
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { EveHomeKitTypes } = require('homebridge-lib/EveHomeKitTypes') as {
+  EveHomeKitTypes: new (api: API) => EveHomeKitTypes;
+};
 
 /**
  * Maximum size for the outlet power series.
