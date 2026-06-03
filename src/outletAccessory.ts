@@ -28,7 +28,7 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
   /**
    * Eve Service for fakegato.
    */
-  private readonly eveService: fakegato;
+  private readonly eveService?: fakegato;
 
   /**
    * Outlet service with power meter.
@@ -48,7 +48,12 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
   /**
    * Elgato Eve fake history service for energy and status.
    */
-  private readonly loggingService: FakeGatoHistoryService;
+  private readonly loggingService?: FakeGatoHistoryService;
+
+  /**
+   * Whether fakegato history is enabled for this outlet.
+   */
+  private readonly enableHistory: boolean;
 
   /**
    * Power series for smoothing operations.
@@ -68,14 +73,15 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
    * @param {string} serial "Real world" serial number for this accessory.
    * @param {string} model Accessory model.
    */
-  constructor(log: Logging, api: API, name: string, serial: string, model: string) {
+  constructor(log: Logging, api: API, name: string, serial: string, model: string, enableHistory = true) {
     super(log, api, name, serial, model);
 
     this.log.debug(`Creating outlet "${this.name}"`);
 
+    this.enableHistory = enableHistory;
+
     // init fakegato objects
     this.eve = new EveHomeKitTypes(this.api);
-    this.eveService = fakegato(this.api);
 
     // create power meter service
     this.outletService = new this.eve.Services.Outlet(this.name);
@@ -95,8 +101,11 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
     this.outletService.getCharacteristic(this.eve.Characteristics.TotalConsumption)
       .on(this.api.hap.CharacteristicEventTypes.GET, this.getTotalEnergyConsumption.bind(this));
 
-    // history logging services
-    this.loggingService = new this.eveService('energy', this, { storage: 'fs', log: this.log, disableRepeatLastData: true } );
+    if (this.enableHistory) {
+      // history logging services
+      this.eveService = fakegato(this.api);
+      this.loggingService = new this.eveService('energy', this, { storage: 'fs', log: this.log, disableRepeatLastData: true } );
+    }
 
     log.info(`Outlet "${name}" created!`);
   }
@@ -197,8 +206,10 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
 
     this.outletService.getCharacteristic(this.eve.Characteristics.CurrentConsumption).updateValue(this.powerConsumption);
 
-    // add entries to history
-    this.loggingService.addEntry({time: Math.round(new Date().valueOf() / 1000), power: this.powerConsumption });
+    if (this.loggingService) {
+      // add entries to history
+      this.loggingService.addEntry({time: Math.round(new Date().valueOf() / 1000), power: this.powerConsumption });
+    }
 
     // add new value to power series
     this.addPowerEntry(this.powerConsumption);
@@ -248,7 +259,13 @@ export class SolaxOutletAccessory extends SolaxPlatformAccessory implements Acce
    * It should return all services which should be added to the accessory.
    */
   getServices(): Service[] {
-    return [ this.informationService, this.outletService, this.loggingService ];
+    const services = [ this.informationService, this.outletService ];
+
+    if (this.loggingService) {
+      services.push(this.loggingService);
+    }
+
+    return services;
   }
 
 }

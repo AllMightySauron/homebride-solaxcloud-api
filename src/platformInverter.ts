@@ -198,25 +198,25 @@ export class SolaxCloudAPIPlatformInverter {
     this.rawOutlets = {
       pv:
         new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.pv}`,
-          `${ACCESSORY_SERIAL_PREFIXES.pv}-${this.sn}`, inverterModel),
+          `${ACCESSORY_SERIAL_PREFIXES.pv}-${this.sn}`, inverterModel, this.config.enableHistory),
       inverterFromBattery:
         new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterFromBattery}`,
-          `${ACCESSORY_SERIAL_PREFIXES.inverterFromBattery}-${this.sn}`, inverterModel),
+          `${ACCESSORY_SERIAL_PREFIXES.inverterFromBattery}-${this.sn}`, inverterModel, this.config.enableHistory),
       inverterToBattery:
         new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToBattery}`,
-          `${ACCESSORY_SERIAL_PREFIXES.inverterToBattery}-${this.sn}`, inverterModel),
+          `${ACCESSORY_SERIAL_PREFIXES.inverterToBattery}-${this.sn}`, inverterModel, this.config.enableHistory),
       inverterAC:
         new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterAC}`,
-          `${ACCESSORY_SERIAL_PREFIXES.inverterAC}-${this.sn}`, inverterModel),
+          `${ACCESSORY_SERIAL_PREFIXES.inverterAC}-${this.sn}`, inverterModel, this.config.enableHistory),
       inverterToGrid:
         new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToGrid}`,
-          `${ACCESSORY_SERIAL_PREFIXES.inverterToGrid}-${this.sn}`, inverterModel),
+          `${ACCESSORY_SERIAL_PREFIXES.inverterToGrid}-${this.sn}`, inverterModel, this.config.enableHistory),
       inverterToHouse:
         new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToHouse}`,
-          `${ACCESSORY_SERIAL_PREFIXES.inverterToHouse}-${this.sn}`, inverterModel),
+          `${ACCESSORY_SERIAL_PREFIXES.inverterToHouse}-${this.sn}`, inverterModel, this.config.enableHistory),
       gridToHouse:
         new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.gridToHouse}`,
-          `${ACCESSORY_SERIAL_PREFIXES.gridToHouse}-${this.sn}`, inverterModel),
+          `${ACCESSORY_SERIAL_PREFIXES.gridToHouse}-${this.sn}`, inverterModel, this.config.enableHistory),
     };
 
     // setup update motion sensor
@@ -306,25 +306,25 @@ export class SolaxCloudAPIPlatformInverter {
         this.smoothOutlets = {
           pv:
             new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.pv} (smooth)`,
-              `${ACCESSORY_SERIAL_PREFIXES.pv}-smooth-${this.sn}`, inverterModel),
+              `${ACCESSORY_SERIAL_PREFIXES.pv}-smooth-${this.sn}`, inverterModel, this.config.enableHistory),
           inverterFromBattery:
             new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterFromBattery} (smooth)`,
-              `${ACCESSORY_SERIAL_PREFIXES.inverterFromBattery}-smooth-${this.sn}`, inverterModel),
+              `${ACCESSORY_SERIAL_PREFIXES.inverterFromBattery}-smooth-${this.sn}`, inverterModel, this.config.enableHistory),
           inverterToBattery:
             new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToBattery} (smooth)`,
-              `${ACCESSORY_SERIAL_PREFIXES.inverterToBattery}-smooth-${this.sn}`, inverterModel),
+              `${ACCESSORY_SERIAL_PREFIXES.inverterToBattery}-smooth-${this.sn}`, inverterModel, this.config.enableHistory),
           inverterAC:
             new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterAC} (smooth)`,
-              `${ACCESSORY_SERIAL_PREFIXES.inverterAC}-smooth-${this.sn}`, inverterModel),
+              `${ACCESSORY_SERIAL_PREFIXES.inverterAC}-smooth-${this.sn}`, inverterModel, this.config.enableHistory),
           inverterToGrid:
               new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToGrid} (smooth)`,
-                `${ACCESSORY_SERIAL_PREFIXES.inverterToGrid}-smooth-${this.sn}`, inverterModel),
+                `${ACCESSORY_SERIAL_PREFIXES.inverterToGrid}-smooth-${this.sn}`, inverterModel, this.config.enableHistory),
           inverterToHouse:
               new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.inverterToHouse} (smooth)`,
-                `${ACCESSORY_SERIAL_PREFIXES.inverterToHouse}-smooth-${this.sn}`, inverterModel),
+                `${ACCESSORY_SERIAL_PREFIXES.inverterToHouse}-smooth-${this.sn}`, inverterModel, this.config.enableHistory),
           gridToHouse:
               new SolaxOutletAccessory(this.log, this.api, `${this.name} ${ACCESSORY_NAMES.gridToHouse} (smooth)`,
-                `${ACCESSORY_SERIAL_PREFIXES.gridToHouse}-smooth-${this.sn}`, inverterModel),
+                `${ACCESSORY_SERIAL_PREFIXES.gridToHouse}-smooth-${this.sn}`, inverterModel, this.config.enableHistory),
         };
 
         this.solaxAccessories.push(this.smoothOutlets.pv, this.smoothOutlets.inverterAC, this.smoothOutlets.inverterToGrid,

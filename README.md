@@ -82,6 +82,7 @@ Configuration parameters are described on the table below:
 | `smoothingMeters`  |  boolean |  Whether to create additional meters by smoothing raw values from Solax Cloud                                                                                                                                               |     true      |       N        |
 | `smoothingMethod`  |  string  |  Statistical method to use for smoothing raw values from Solax Cloud (simple or exponential moving average - "sma" or "ema")                                                                                                |     "sma"     |       N        |
 | `pureHomeApp`      |  boolean |  Whether to create meters as standard accessories that can be used on the Home App (power will show as ambient light sensors)                                                                                               |     false     |       N        |
+| `enableHistory`    |  boolean |  Whether to enable Eve/fakegato history services for outlet power readings                                                                                                                                                  |     true      |       N        |
 
 **NOTE:** The `pollingFrequency` parameter defaults to 300 seconds, since Solax/QCells inverters update cloud data every 5 minutes.
 

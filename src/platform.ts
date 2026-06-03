@@ -110,7 +110,7 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       this.config.inverters.forEach(inverter => {
         // setup new inverter
         const platformInverter: SolaxCloudAPIPlatformInverter =
-          new SolaxCloudAPIPlatformInverter(log, config, api,
+          this.createPlatformInverter(log, config, api,
             VALID_INVERTER_BRANDS.indexOf(inverter.brand), inverter.tokenId, inverter.sn, inverter.name,
             inverter.hasBattery, this.smoothingWindow);
 
@@ -125,7 +125,7 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
           ? this.config.inverters[0].brand
           : 'Solax/QCells';
 
-        this.allInverters = new SolaxCloudAPIPlatformInverter(log, config, api,
+        this.allInverters = this.createPlatformInverter(log, config, api,
           VALID_INVERTER_BRANDS.indexOf(this.config.inverters[0].brand), '', 'total', 'All inverters',
           this.inverters.map(inverter => + inverter.hasBattery()).reduce((a, b) => a + b, 0) > 0,
           this.smoothingWindow, true, SolaxCloudAPIPlatform.getInverterBrandDisplayName(brandName));
@@ -152,7 +152,13 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static isInverterConfig(obj: any): obj is InverterConfig {
-    return 'name' in obj && 'sn' in obj && 'brand' in obj && 'tokenId' in obj && VALID_INVERTER_BRANDS.includes(obj.brand);
+    return obj !== null &&
+      typeof obj === 'object' &&
+      'name' in obj &&
+      'sn' in obj &&
+      'brand' in obj &&
+      'tokenId' in obj &&
+      VALID_INVERTER_BRANDS.includes(obj.brand);
   }
 
   /**
@@ -169,6 +175,18 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       default:
         return brand;
     }
+  }
+
+  /**
+   * Creates an inverter instance. Separated for focused unit tests.
+   */
+  protected createPlatformInverter(log: Logging, config: PlatformConfig, api: API,
+    brand: number, tokenId: string, sn: string,
+    name: string, hasBattery: boolean,
+    smoothingWindow: number,
+    virtual = false,
+    brandName?: string): SolaxCloudAPIPlatformInverter {
+    return new SolaxCloudAPIPlatformInverter(log, config, api, brand, tokenId, sn, name, hasBattery, smoothingWindow, virtual, brandName);
   }
 
   /**
@@ -220,7 +238,7 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
   /**
    * Periodically retrieves inverter data from Solax Cloud API using configured tokenID and SN.
    */
-  private async fetchDataPeriodically(): Promise<void> {
+  protected async fetchDataPeriodically(): Promise<void> {
     // loop forever
     for (;;) {
       // update data for all configured inverters
@@ -268,6 +286,10 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
           return result;
         }
       });
+
+      if (!result) {
+        return result;
+      }
     } else {
       this.log.error('Config check: Incorrect type for mandatory parameter "inverters" in config file, aborting!');
       result = false;
@@ -345,6 +367,17 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       if (typeof config.pureHomeApp !== 'boolean') {
         config.pureHomeApp = false;
         this.log.info(`Config check: Invalid setting for using pure Home app accessories, defaulting to ${config.pureHomeApp}.`);
+      }
+    }
+
+    // check for fakegato history
+    if (config.enableHistory === undefined) {
+      config.enableHistory = true;
+      this.log.info(`Config check: No config for history, defaulting to ${config.enableHistory}.`);
+    } else {
+      if (typeof config.enableHistory !== 'boolean') {
+        config.enableHistory = true;
+        this.log.info(`Config check: Invalid setting for history, defaulting to ${config.enableHistory}.`);
       }
     }
 

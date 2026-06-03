@@ -100,6 +100,13 @@
           "required": false,
           "default": false,
           "description": "Enable this option to create light ambient sensors for power consumption."
+      },
+      "enableHistory": {
+          "title": "Enable Eve history?",
+          "type": "boolean",
+          "required": false,
+          "default": true,
+          "description": "Enable this option to create fakegato history services for outlet power readings."
       }
     }
   }

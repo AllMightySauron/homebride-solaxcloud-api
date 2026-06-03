@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.4.1] - 2026-06-03
+### Added
+* Added unit coverage for all accessory types, platform config validation, and totalizer inverter creation.
+* Added `enableHistory` config option to disable Eve/fakegato history services.
+### Changed
+* Bumped Fakegato dependency.
+* Updated the test command to exit cleanly after running Mocha.
+### Fixed
+* Handled malformed inverter entries cleanly during platform config validation.
+
 ## [v2.4.0] - 2026-06-03
 ### Changed
 * Replaced the local Solax Cloud API implementation with the external `solax-cloud-api` package.

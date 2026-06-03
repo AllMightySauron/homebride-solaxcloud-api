@@ -2,7 +2,7 @@
   "private": false,
   "displayName": "Homebridge Solax Cloud API",
   "name": "homebridge-solaxcloud-api",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "Integrates solar production info using public Solax/QCells Cloud API into Homebridge accessories.",
   "license": "Apache-2.0",
   "repository": {
@@ -18,7 +18,7 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "test": "mocha --require ts-node/register test/**/*.test.ts",
+    "test": "mocha --exit --require ts-node/register test/**/*.test.ts",
     "lint": "eslint src/**.ts --max-warnings=0",
     "watch": "npm run build && npm link && nodemon",
     "build": "rimraf ./dist && tsc",
@@ -32,7 +32,7 @@
     "solaxcloud"
   ],
   "dependencies": {
-    "fakegato-history": "^0.6.4",
+    "fakegato-history": "^0.6.7",
     "homebridge-lib": "^5.7.2",
     "jshint": "^2.13.6",
     "string-hash-64": "^1.0.3",
