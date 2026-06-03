@@ -1,6 +1,6 @@
 import { AccessoryPlugin, API, Logging, PlatformConfig } from 'homebridge';
 
-import { SolaxCloudAPI, SolaxCloudAPIResponse } from './solaxcloudapi';
+import { SolaxCloudAPI, SolaxCloudAPIResponse } from 'solax-cloud-api';
 
 import { SolaxOutletAccessory } from './outletAccessory';
 import { SolaxLightSensorAccessory } from './lightSensorAccessory';
@@ -68,11 +68,6 @@ export class SolaxCloudAPIPlatformInverter {
   private readonly api: API;
 
   /**
-   * Inverter brand.
-   */
-  private brand: number;
-
-  /**
    * Inverter name.
    */
   private name: string;
@@ -95,7 +90,17 @@ export class SolaxCloudAPIPlatformInverter {
   /**
    * API for retrieving data from Solax cloud.
    */
-  private solaxCloudAPI: SolaxCloudAPI;
+  private solaxCloudAPI?: SolaxCloudAPI;
+
+  /**
+   * Inverter brand name.
+   */
+  private brandName: string;
+
+  /**
+   * Whether this inverter is a virtual accessory.
+   */
+  private virtual: boolean;
 
   /**
    * Virtual motion sensor triggered by data updates from Solax Cloud.
@@ -150,39 +155,43 @@ export class SolaxCloudAPIPlatformInverter {
   constructor (log: Logging, config: PlatformConfig, api: API,
     brand: number, tokenId: string, sn: string,
     name: string, hasBattery: boolean,
-    smoothingWindow: number) {
+    smoothingWindow: number,
+    virtual = false,
+    brandName = SolaxCloudAPIPlatformInverter.getInverterBrandName(brand)) {
     // store values in properties
     this.log = log;
     this.config = config;
     this.api = api;
 
     // setup inverter data
-    this.brand = brand;
     this.sn = sn.toLowerCase();
     this.name = name;
+    this.brandName = brandName;
+    this.virtual = virtual;
 
     this.smoothingWindow = smoothingWindow;
     this.batteryInstalled = hasBattery;
 
     this.log.info(
-      `Initialing acessories for inverter "${name}" (SN="${sn}") from ${SolaxCloudAPIPlatformInverter.getInverterBrandName(brand)}...`);
+      `Initialing acessories for inverter "${name}" (SN="${sn}") from ${this.brandName}...`);
 
-    // init new Solax Cloud API object with give tokenID and sn
-    this.solaxCloudAPI = new SolaxCloudAPI(brand, tokenId, sn);
+    let inverterModel = 'Unknown';
 
-    // initial data set
-    const apiData = this.solaxCloudAPI.getAPIData();
+    if (!this.virtual) {
+      // init new Solax Cloud API object with give tokenID and sn
+      this.solaxCloudAPI = new SolaxCloudAPI(brand, tokenId, sn);
 
-    this.log.debug(`apiData = ${JSON.stringify(apiData)}`);
+      // initial data set
+      const apiData = this.solaxCloudAPI.getAPIData();
 
-    let inverterModel: string;
+      this.log.debug(`apiData = ${JSON.stringify(apiData)}`);
 
-    if (apiData.success) {
-      inverterModel = SolaxCloudAPI.getInverterType(apiData.result.inverterType);
-    } else {
-      this.log.info(`Could not retrieve initial values from ${SolaxCloudAPIPlatformInverter.getInverterBrandName(brand)} ` +
-                    'Cloud, accessory Serial Number and Model properties deferred...');
-      inverterModel = 'Unknown';
+      if (apiData.success) {
+        inverterModel = SolaxCloudAPI.getInverterType(apiData.result.inverterType);
+      } else {
+        this.log.info(`Could not retrieve initial values from ${this.brandName} ` +
+                      'Cloud, accessory Serial Number and Model properties deferred...');
+      }
     }
 
     // setup raw outlet accessories
@@ -484,7 +493,11 @@ export class SolaxCloudAPIPlatformInverter {
    */
   public updateInverterDataFromCloud() {
     try {
-      this.log.info(`Retrieving data from ${SolaxCloudAPIPlatformInverter.getInverterBrandName(this.brand)} ` +
+      if (this.virtual || !this.solaxCloudAPI) {
+        return;
+      }
+
+      this.log.info(`Retrieving data from ${this.brandName} ` +
                     `Cloud API for inverter "${this.name}" (SN="${this.sn}")`);
 
       const apiData = this.solaxCloudAPI.getAPIData();
@@ -497,7 +510,7 @@ export class SolaxCloudAPIPlatformInverter {
         throw new Error(apiData.exception);
       }
     } catch (error) {
-      this.log.error(`Failed to read from ${SolaxCloudAPIPlatformInverter.getInverterBrandName(this.brand)} `+
+      this.log.error(`Failed to read from ${this.brandName} `+
                      `Cloud API for inverter "${this.name}" (SN="${this.sn})". Error: ${error}`);
     }
   }

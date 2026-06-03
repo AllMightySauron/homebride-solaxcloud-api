@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.4.0] - 2026-06-03
+### Changed
+* Replaced the local Solax Cloud API implementation with the external `solax-cloud-api` package.
+* Bumped Mocha test dependency.
+### Fixed
+* Kept battery charge state reads in sync after updates.
+* Rejected polling frequencies that would break meter smoothing.
+* Prevented the multi-inverter totalizer from making cloud requests without real inverter credentials.
+
 ## [v2.3.3] - 2024-08-02
 ### Fixed
 * Updated URL for Solax cloud API fetches.

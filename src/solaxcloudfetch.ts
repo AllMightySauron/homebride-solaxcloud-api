@@ -1,9 +1,9 @@
 /* eslint-disable no-console */
-import { SolaxCloudAPI } from './solaxcloudapi';
+import { SolaxCloudAPI } from 'solax-cloud-api';
 
 import fs from 'fs';
 
-const config = JSON.parse(fs.readFileSync('config.json').toString());
+const config = JSON.parse(fs.readFileSync('../config.json').toString());
 const api = new SolaxCloudAPI(config.platforms[0].brand, config.platforms[0].tokenId, config.platforms[0].inverters[0].sn);
 
 const result = api.getAPIData();

@@ -131,6 +131,8 @@ export class SolaxBatteryAccessory extends SolaxPlatformAccessory implements Acc
   public setChargeState(state: number) {
     this.log.debug(`${this.name}: SET Charge State (state=${state})`);
 
+    this.batteryChargeState = state;
+
     this.batteryService.updateCharacteristic(this.api.hap.Characteristic.ChargingState, state);
   }
 

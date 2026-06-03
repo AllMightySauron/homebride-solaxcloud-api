@@ -39,6 +39,11 @@ const MAX_POLLS_DAY = 10000;
 const MAX_POLLING_FREQUENCY = Math.max(60 / MAX_POLLS_MIN, (24 * 60 * 60) / MAX_POLLS_DAY);
 
 /**
+ * Maximum polling interval that still gives at least one smoothing period.
+ */
+const MAX_SMOOTHING_POLLING_FREQUENCY = 15 * 60;
+
+/**
  * Type definition for inverter in configuration file.
  */
 interface InverterConfig {
@@ -113,12 +118,17 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
         this.inverters.push(platformInverter);
       });
 
-      // create inverter totalizers (pick first inverter as brand)
+      // create inverter totalizers
       if (this.inverters.length > 1) {
+        const uniqueInverterBrands = new Set(this.config.inverters.map(inverter => inverter.brand));
+        const brandName = uniqueInverterBrands.size === 1
+          ? this.config.inverters[0].brand
+          : 'Solax/QCells';
+
         this.allInverters = new SolaxCloudAPIPlatformInverter(log, config, api,
-          VALID_INVERTER_BRANDS.indexOf(this.config.inverters[0].brand), this.config.tokenId, 'total', 'All inverters',
+          VALID_INVERTER_BRANDS.indexOf(this.config.inverters[0].brand), '', 'total', 'All inverters',
           this.inverters.map(inverter => + inverter.hasBattery()).reduce((a, b) => a + b, 0) > 0,
-          this.smoothingWindow);
+          this.smoothingWindow, true, SolaxCloudAPIPlatform.getInverterBrandDisplayName(brandName));
       }
 
       // start data fetching
@@ -143,6 +153,22 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static isInverterConfig(obj: any): obj is InverterConfig {
     return 'name' in obj && 'sn' in obj && 'brand' in obj && 'tokenId' in obj && VALID_INVERTER_BRANDS.includes(obj.brand);
+  }
+
+  /**
+   * Gets an inverter brand display name from config.
+   * @param brand Inverter brand from config.
+   * @returns Inverter brand display name.
+   */
+  private static getInverterBrandDisplayName(brand: string): string {
+    switch (brand) {
+      case 'qcells':
+        return 'QCells';
+      case 'solax':
+        return 'Solax';
+      default:
+        return brand;
+    }
   }
 
   /**
@@ -200,7 +226,7 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       // update data for all configured inverters
       this.inverters.forEach(inverter => inverter.updateInverterDataFromCloud());
 
-      this.log.info(`Updated data from ${this.config.brand} Cloud API, sleeping for ${this.config.pollingFrequency} seconds.`);
+      this.log.info(`Updated data from configured Cloud APIs, sleeping for ${this.config.pollingFrequency} seconds.`);
 
       // update inverter totalizers if needed
       if (this.inverters.length > 1) {
@@ -274,6 +300,13 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
             `Config check: Polling frequency cannot be higher than ${MAX_POLLS_MIN} times/min and ${MAX_POLLS_DAY} ` +
             `times/day, defaulting to ${DEFAULT_POLLING_FREQUENCY} seconds.`);
           config.pollingFrequency = DEFAULT_POLLING_FREQUENCY;
+        } else if (config.pollingFrequency > MAX_SMOOTHING_POLLING_FREQUENCY) {
+          const message = 'Config check: Polling frequency cannot be higher than ' +
+            `${MAX_SMOOTHING_POLLING_FREQUENCY} seconds, aborting!`;
+
+          this.log.error(message);
+
+          throw new Error(message);
         }
       } else {
         this.log.info('Config check: Invalid polling frequency (must be a positive integer number), defaulting to ' +
