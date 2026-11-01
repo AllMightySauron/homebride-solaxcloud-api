@@ -1,7 +1,19 @@
-import { AccessoryPlugin, API, StaticPlatformPlugin, Logging, PlatformConfig, APIEvent } from 'homebridge';
+import {
+  AccessoryPlugin,
+  API,
+  DynamicPlatformPlugin,
+  Logging,
+  MatterAccessory,
+  PlatformAccessory,
+  PlatformConfig,
+  APIEvent,
+  Service,
+} from 'homebridge';
 
 import { Util } from './util.js';
 import { SolaxCloudAPIPlatformInverter, ACCESSORY_KEYS } from './platformInverter.js';
+import { SolaxPlatformAccessory } from './platformAccessory.js';
+import { PLATFORM_NAME, PLUGIN_NAME } from './settings.js';
 
 /**
  * Valid inverter brands (Solax, QCells)
@@ -58,10 +70,16 @@ interface InverterConfig {
  * This class is the main constructor for your plugin, this is where you should
  * parse the user config and discover/register accessories with Homebridge.
  */
-export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
+export class SolaxCloudAPIPlatform implements DynamicPlatformPlugin {
   private readonly log: Logging;
   private readonly config: PlatformConfig;
   private readonly api: API;
+
+  /** HAP accessories restored by Homebridge for this dynamic platform. */
+  private cachedAccessories = new Map<string, PlatformAccessory>();
+
+  /** Matter accessories restored by Homebridge for this dynamic platform. */
+  private cachedMatterAccessories = new Map<string, MatterAccessory>();
 
   /**
    * Number of periods to use for data smoothing.
@@ -142,7 +160,24 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
     // When this event is fired it means Homebridge has created all accessories.
     this.api.on(APIEvent.DID_FINISH_LAUNCHING, () => {
       this.log.debug('Executed didFinishLaunching callback');
+      this.reconcileAccessories();
     });
+  }
+
+  /**
+   * Tracks a HAP accessory restored from Homebridge's dynamic-platform cache.
+   */
+  configureAccessory(accessory: PlatformAccessory): void {
+    this.cachedAccessories.set(accessory.UUID, accessory);
+  }
+
+  /**
+   * Tracks a Matter accessory restored from Homebridge's Matter cache.
+   * Re-registration by the owning outlet uses the same UUID and attaches to the
+   * restored endpoint without changing the controller-visible identity.
+   */
+  configureMatterAccessory(accessory: MatterAccessory): void {
+    this.cachedMatterAccessories.set(accessory.UUID, accessory);
   }
 
   /**
@@ -386,12 +421,12 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
     return result;
   }
 
-  /*
-   * This method is called once at startup.
-   * The Platform should pass all accessories which need to be created to the callback in form of a AccessoryPlugin.
-   * The Platform must respond in a timely manner as otherwise the startup of the bridge would be unnecessarily delayed.
+  /**
+   * Returns the complete legacy accessory inventory produced by the configured
+   * inverters. Keeping these wrappers preserves their services and update logic
+   * while the platform migrates ownership to Homebridge's dynamic cache.
    */
-  accessories(callback: (foundAccessories: AccessoryPlugin[]) => void): void {
+  private getAccessories(): AccessoryPlugin[] {
     const accessories: AccessoryPlugin[] = [];
 
     // loop over inverters and add accessories
@@ -402,6 +437,106 @@ export class SolaxCloudAPIPlatform implements StaticPlatformPlugin {
       accessories.push(...this.allInverters.getAccessories());
     }
 
-    callback(accessories);
+    return accessories;
+  }
+
+  /**
+   * Reconciles the configured inventory with Homebridge's cached dynamic
+   * accessories while preserving the exact UUID formula used by the old static
+   * platform loader.
+   */
+  private reconcileAccessories(): void {
+    const newAccessories: PlatformAccessory[] = [];
+    const restoredAccessories: PlatformAccessory[] = [];
+
+    for (const legacyAccessory of this.getAccessories()) {
+      const accessory = legacyAccessory as SolaxPlatformAccessory;
+      const displayName = accessory.getDisplayName();
+      const uuid = this.getLegacyUuid(accessory);
+
+      let platformAccessory = this.cachedAccessories.get(uuid);
+      if (platformAccessory) {
+        restoredAccessories.push(platformAccessory);
+      } else {
+        platformAccessory = new this.api.platformAccessory(displayName, uuid);
+        newAccessories.push(platformAccessory);
+      }
+
+      this.configurePlatformAccessory(platformAccessory, accessory);
+    }
+
+    if (newAccessories.length > 0) {
+      this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, newAccessories);
+    }
+
+    if (restoredAccessories.length > 0) {
+      this.api.updatePlatformAccessories(restoredAccessories);
+    }
+
+    const expectedUUIDs = new Set(
+      this.getAccessories().map(accessory =>
+        this.getLegacyUuid(accessory as SolaxPlatformAccessory),
+      ),
+    );
+    const retainedHapOrphans = [...this.cachedAccessories.values()]
+      .filter(accessory => !expectedUUIDs.has(accessory.UUID));
+    if (retainedHapOrphans.length > 0) {
+      this.log.warn(
+        `Retaining ${retainedHapOrphans.length} unclaimed cached HAP ` +
+        `accessor${retainedHapOrphans.length === 1 ? 'y' : 'ies'} during the beta migration.`,
+      );
+    }
+
+    if (this.cachedMatterAccessories.size > 0) {
+      this.log.debug(
+        `Restored ${this.cachedMatterAccessories.size} cached Matter ` +
+        `accessor${this.cachedMatterAccessories.size === 1 ? 'y' : 'ies'} for plugin re-registration.`,
+      );
+    }
+
+    this.log.info(
+      `Dynamic platform reconciliation complete: ${restoredAccessories.length} restored, ` +
+      `${newAccessories.length} registered.`,
+    );
+  }
+
+  /** Reproduces Homebridge's legacy static-platform UUID seed exactly. */
+  private getLegacyUuid(accessory: SolaxPlatformAccessory): string {
+    return this.api.hap.uuid.generate(
+      `${this.config.platform}:${accessory.uuid_base || accessory.getDisplayName()}`,
+    );
+  }
+
+  /**
+   * Replaces serialized services with the live wrapper services and handlers.
+   * The PlatformAccessory object and UUID remain unchanged.
+   */
+  private configurePlatformAccessory(
+    platformAccessory: PlatformAccessory,
+    legacyAccessory: SolaxPlatformAccessory,
+  ): void {
+    const informationType = this.api.hap.Service.AccessoryInformation;
+    const informationService = platformAccessory.getService(informationType);
+
+    for (const service of [...platformAccessory.services]) {
+      if (service.UUID !== informationType.UUID) {
+        platformAccessory.removeService(service);
+      }
+    }
+
+    for (const service of legacyAccessory.getServices().filter((service): service is Service => !!service)) {
+      if (service.UUID === informationType.UUID) {
+        informationService?.replaceCharacteristicsFromService(service);
+      } else {
+        platformAccessory.addService(service);
+      }
+    }
+
+    if (platformAccessory.displayName !== legacyAccessory.getDisplayName()) {
+      platformAccessory.updateDisplayName(legacyAccessory.getDisplayName());
+    }
+
+    platformAccessory.removeAllListeners('identify');
+    platformAccessory.on('identify', () => legacyAccessory.identify());
   }
 }

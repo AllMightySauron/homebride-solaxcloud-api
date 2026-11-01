@@ -72,6 +72,14 @@ Minimal platform configuration is depicted by the example configuration file bel
   ]
 }
 ```
+
+> **Upgrading to v2.5.7 beta:** only one `SolaxCloudAPI` platform block is
+> supported. If your configuration contains multiple blocks, merge every
+> inverter into the single `inverters` array before upgrading. Settings such
+> as `pollingFrequency`, `smoothMeters`, `smoothingMethod`,
+> `pureHomeApp`, and `enableHistory` are shared by all inverters in that
+> block. Existing HAP and Matter accessory identities are preserved.
+
 Configuration parameters are described on the table below:
 
 | **Parameter**      | **Type** |  **Description**                                                                                                                                                                                                            |  **Default**  | **Mandatory?** |

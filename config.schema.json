@@ -1,7 +1,7 @@
 {
   "pluginAlias": "SolaxCloudAPI",
   "pluginType": "platform",
-  "singular": false,
+  "singular": true,
   "headerDisplay": "This Homebridge plugin uses Solax/QCells API cloud service to obtain real-time info of your inverters.",
   "schema": {
     "type": "object",

@@ -153,6 +153,13 @@ export class SolaxPlatformAccessory implements AccessoryPlugin {
     this.log.info(`${this.name}: Identify (true serial=${this.trueSerialNumber}, serial=${this.serialNumber})`);
   }
 
+  /**
+   * Gets the display name used by the legacy static-platform UUID formula.
+   */
+  public getDisplayName(): string {
+    return this.displayName;
+  }
+
   /*
    * This method is called directly after creation of this instance.
    * It should return all services which should be added to the accessory.
