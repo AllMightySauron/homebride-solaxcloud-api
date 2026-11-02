@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v2.5.7-beta.0] - 2026-11-01
+### Changed
+* Migrated the plugin from Homebridge's static platform model to the supported dynamic platform model.
+* Preserved the legacy HAP UUID formula and existing Matter UUIDs so cached accessories can be reclaimed without re-pairing either bridge.
+* Preserved qualified platform identifiers during cache reconciliation.
+* Changed configuration to one platform block; users with multiple blocks must merge their inverters into one shared `inverters` array before upgrading.
+### Fixed
+* Allowed Homebridge 2.4 to associate restored Matter electrical sensors with the active Solax platform instead of removing them as orphans.
+### Safety
+* Retained unclaimed cached HAP accessories during the beta migration instead of deleting them automatically.
+
 ## [v2.5.6] - 2026-10-30
 ### Fixed
 * Shortened smoothed Matter sensor serials from `-matter-smooth-` to `-matter-sm-` so every generated serial stays within Matter's 32-character limit.
