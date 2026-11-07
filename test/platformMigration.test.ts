@@ -156,7 +156,7 @@ describe('SolaxCloudAPIPlatform dynamic migration', () => {
     assert.ok(cachedAccessory.services.some(service => service.displayName === 'Renamed Outlet'));
   });
 
-  it('does not unregister an unclaimed cached HAP accessory during the beta migration', () => {
+  it('does not unregister an unclaimed cached HAP accessory during the platform migration', () => {
     const harness = createMigrationHarness();
     const platform = new MigrationTestPlatform(createLog(), createConfig(), harness.api);
     const orphan = new RuntimePlatformAccessory(

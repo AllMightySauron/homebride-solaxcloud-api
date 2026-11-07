@@ -483,7 +483,7 @@ export class SolaxCloudAPIPlatform implements DynamicPlatformPlugin {
     if (retainedHapOrphans.length > 0) {
       this.log.warn(
         `Retaining ${retainedHapOrphans.length} unclaimed cached HAP ` +
-        `accessor${retainedHapOrphans.length === 1 ? 'y' : 'ies'} during the beta migration.`,
+        `accessor${retainedHapOrphans.length === 1 ? 'y' : 'ies'} during the platform migration.`,
       );
     }
 

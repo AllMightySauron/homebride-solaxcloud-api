@@ -73,7 +73,7 @@ Minimal platform configuration is depicted by the example configuration file bel
 }
 ```
 
-> **Upgrading to v2.5.7 beta:** only one `SolaxCloudAPI` platform block is
+> **Upgrading to v2.5.7:** only one `SolaxCloudAPI` platform block is
 > supported. If your configuration contains multiple blocks, merge every
 > inverter into the single `inverters` array before upgrading. Settings such
 > as `pollingFrequency`, `smoothMeters`, `smoothingMethod`,
